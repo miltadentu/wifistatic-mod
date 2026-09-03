@@ -10,6 +10,8 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
 
     steps:
     - name: Checkout code
@@ -26,7 +28,25 @@ jobs:
       run: chmod +x gradlew
 
     - name: Build Debug APK
-      run: ./gradlew :app:assembleDebug
+      id: build_debug
+      run: ./gradlew :app:assembleDebug --stacktrace > build_debug.log 2>&1
+      continue-on-error: true
+
+    - name: Save log on failure
+      if: steps.build_debug.outcome == 'failure'
+      run: |
+        git config user.email "ci@github.com"
+        git config user.name "CI Bot"
+        git checkout --orphan ci-logs || git checkout ci-logs
+        git rm -rf . 2>/dev/null || true
+        cp /home/runner/work/*/*/build_debug.log ./build_debug.log || cp build_debug.log ./build_debug.log
+        git add build_debug.log
+        git commit -m "CI build log $(date)"
+        git push -f origin ci-logs
+
+    - name: Fail if build failed
+      if: steps.build_debug.outcome == 'failure'
+      run: exit 1
 
     - name: Build Release APK
       run: ./gradlew :app:assembleRelease
