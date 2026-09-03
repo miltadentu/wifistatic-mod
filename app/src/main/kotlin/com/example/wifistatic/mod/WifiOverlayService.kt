@@ -82,8 +82,8 @@ class WifiOverlayService : Service() {
         container.addView(wifiIcon)
         container.addView(wifiText)
 
-        val x = prefs.getInt("pos_x", 50)
-        val y = prefs.getInt("pos_y", 50)
+        val posX = prefs.getInt("pos_x", 50)
+        val posY = prefs.getInt("pos_y", 50)
         val alpha = prefs.getInt("alpha", 200)
         val size = prefs.getInt("size", 30)
         val textPosition = prefs.getInt("text_position", 0) // 0 = right, 1 = bottom
@@ -96,8 +96,8 @@ class WifiOverlayService : Service() {
                     WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE
             width = size * 2
             height = size * 2
-            x = (x * 10)
-            y = (y * 10)
+            x = (posX * 10)
+            y = (posY * 10)
         }
 
         updateContainerLayout(textPosition)
