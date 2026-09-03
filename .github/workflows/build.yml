@@ -29,20 +29,35 @@ jobs:
 
     - name: Build Debug APK
       id: build_debug
-      run: ./gradlew :app:assembleDebug --stacktrace > build_debug.log 2>&1
+      run: ./gradlew :app:assembleDebug --stacktrace 2>&1 | tee build_debug.log
       continue-on-error: true
 
-    - name: Save log on failure
-      if: steps.build_debug.outcome == 'failure'
+    - name: Upload log via Contents API
+      if: always()
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
-        git config user.email "ci@github.com"
-        git config user.name "CI Bot"
-        git checkout --orphan ci-logs || git checkout ci-logs
-        git rm -rf . 2>/dev/null || true
-        cp /home/runner/work/*/*/build_debug.log ./build_debug.log || cp build_debug.log ./build_debug.log
-        git add build_debug.log
-        git commit -m "CI build log $(date)"
-        git push -f origin ci-logs
+        tail -c 60000 build_debug.log > build_debug_trimmed.log
+        CONTENT=$(base64 -w0 build_debug_trimmed.log)
+        REPO="miltadentu/wifistatic-mod"
+        BRANCH="ci-logs"
+        # Create branch ref if it doesn't exist (point to current main sha)
+        MAIN_SHA=$(curl -s -H "Authorization: token $GH_TOKEN" "https://api.github.com/repos/$REPO/git/ref/heads/main" | python3 -c "import sys,json; print(json.load(sys.stdin)['object']['sha'])")
+        curl -s -X POST -H "Authorization: token $GH_TOKEN" -H "Content-Type: application/json" \
+          "https://api.github.com/repos/$REPO/git/refs" \
+          -d "{\"ref\":\"refs/heads/$BRANCH\",\"sha\":\"$MAIN_SHA\"}" > /dev/null
+        # Check if file exists already on that branch to get its sha (for update)
+        EXISTING_SHA=$(curl -s -H "Authorization: token $GH_TOKEN" "https://api.github.com/repos/$REPO/contents/build_debug.log?ref=$BRANCH" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('sha',''))" 2>/dev/null || echo "")
+        if [ -n "$EXISTING_SHA" ]; then
+          curl -s -X PUT -H "Authorization: token $GH_TOKEN" -H "Content-Type: application/json" \
+            "https://api.github.com/repos/$REPO/contents/build_debug.log" \
+            -d "{\"message\":\"CI log update run ${{ github.run_id }}\",\"content\":\"$CONTENT\",\"branch\":\"$BRANCH\",\"sha\":\"$EXISTING_SHA\"}" > /tmp/api_result.json
+        else
+          curl -s -X PUT -H "Authorization: token $GH_TOKEN" -H "Content-Type: application/json" \
+            "https://api.github.com/repos/$REPO/contents/build_debug.log" \
+            -d "{\"message\":\"CI log run ${{ github.run_id }}\",\"content\":\"$CONTENT\",\"branch\":\"$BRANCH\"}" > /tmp/api_result.json
+        fi
+        cat /tmp/api_result.json
 
     - name: Fail if build failed
       if: steps.build_debug.outcome == 'failure'
