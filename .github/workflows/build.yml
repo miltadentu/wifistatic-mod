@@ -1,10 +1,10 @@
-name: Build WiFi Static Mod APK
+name: Build APK
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [ main, master, develop ]
   pull_request:
-    branches: [ main, develop ]
+    branches: [ main, master, develop ]
   workflow_dispatch:
 
 jobs:
@@ -12,7 +12,8 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v3
+    - name: Checkout code
+      uses: actions/checkout@v4
 
     - name: Set up JDK 17
       uses: actions/setup-java@v4
@@ -21,45 +22,28 @@ jobs:
         distribution: 'temurin'
         cache: gradle
 
-    - name: Make Gradle executable
-      run: chmod +x ./gradlew
+    - name: Grant execute permission
+      run: chmod +x gradlew
 
     - name: Build Debug APK
-      run: ./gradlew --no-daemon assembleDebug
+      run: ./gradlew :app:assembleDebug
 
     - name: Build Release APK
-      run: ./gradlew --no-daemon assembleRelease -x lint
+      run: ./gradlew :app:assembleRelease
+
+    - name: List build outputs
+      run: find app/build/outputs -name "*.apk" -type f
 
     - name: Upload Debug APK
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
+      if: always()
       with:
-        name: wifistatic-mod-debug
-        path: app/build/outputs/apk/debug/app-debug.apk
+        name: WiFiStaticMod-debug
+        path: app/build/outputs/apk/debug/*.apk
 
-    - name: Upload Release APK
-      uses: actions/upload-artifact@v3
+    - name: Upload Release APK  
+      uses: actions/upload-artifact@v4
+      if: always()
       with:
-        name: wifistatic-mod-release
-        path: app/build/outputs/apk/release/app-release-unsigned.apk
-
-    - name: Create Release
-      if: startsWith(github.ref, 'refs/tags/')
-      uses: actions/create-release@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        tag_name: ${{ github.ref_name }}
-        release_name: Release ${{ github.ref_name }}
-        draft: false
-        prerelease: false
-
-    - name: Upload to Release
-      if: startsWith(github.ref, 'refs/tags/')
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./app/build/outputs/apk/release/app-release-unsigned.apk
-        asset_name: WiFiStaticMod-${{ github.ref_name }}.apk
-        asset_content_type: application/vnd.android.package-archive
+        name: WiFiStaticMod-release
+        path: app/build/outputs/apk/release/*.apk

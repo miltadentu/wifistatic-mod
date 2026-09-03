@@ -18,10 +18,6 @@ android {
     buildTypes {
         release {
             isMinifyEnabled = false
-            proguardFiles(
-                getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro"
-            )
         }
         debug {
             isDebuggable = true
@@ -29,16 +25,12 @@ android {
     }
 
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_1_8
-        targetCompatibility = JavaVersion.VERSION_1_8
+        sourceCompatibility = JavaVersion.VERSION_11
+        targetCompatibility = JavaVersion.VERSION_11
     }
 
     kotlinOptions {
-        jvmTarget = "1.8"
-    }
-
-    buildFeatures {
-        viewBinding = false
+        jvmTarget = "11"
     }
 }
 
@@ -46,6 +38,5 @@ dependencies {
     implementation("androidx.appcompat:appcompat:1.6.1")
     implementation("androidx.core:core:1.10.1")
     implementation("com.google.android.material:material:1.9.0")
-    implementation("androidx.leanback:leanback:1.0.0")
     implementation("org.jetbrains.kotlin:kotlin-stdlib:1.9.0")
 }
