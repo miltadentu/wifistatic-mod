@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#cc000000">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="10dp"
+        android:gravity="center">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Настройки WiFi"
+            android:textSize="22sp"
+            android:textColor="#ffffffff"
+            android:layout_marginBottom="10dp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Позиция X и Y"
+            android:textColor="#ff00ff00" />
+
+        <SeekBar
+            android:id="@+id/sbX"
+            android:layout_width="600dp"
+            android:layout_height="35dp"
+            android:max="100" />
+
+        <SeekBar
+            android:id="@+id/sbY"
+            android:layout_width="600dp"
+            android:layout_height="35dp"
+            android:max="100" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Прозрачность"
+            android:textColor="#ff00ff00" />
+
+        <SeekBar
+            android:id="@+id/sbAlpha"
+            android:layout_width="600dp"
+            android:layout_height="35dp"
+            android:max="255" />
+
+        <CheckBox
+            android:id="@+id/cbAutoHide"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Авто-скрытие (15 сек)"
+            android:textSize="16sp"
+            android:textColor="#ff00ff00" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Позиция текста WiFi"
+            android:textColor="#ff00ff00"
+            android:layout_marginTop="10dp" />
+
+        <SeekBar
+            android:id="@+id/sbTextPosition"
+            android:layout_width="600dp"
+            android:layout_height="35dp"
+            android:max="1" />
+
+        <TextView
+            android:id="@+id/tvTextPositionLabel"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Справа"
+            android:textColor="#ff00ff00" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Размер шрифта (множитель)"
+            android:textColor="#ff00ff00"
+            android:layout_marginTop="5dp" />
+
+        <SeekBar
+            android:id="@+id/sbFontSize"
+            android:layout_width="600dp"
+            android:layout_height="35dp"
+            android:max="200"
+            android:progress="100" />
+
+        <TextView
+            android:id="@+id/tvFontSizeLabel"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="100%"
+            android:textColor="#ff00ff00" />
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginTop="10dp">
+
+            <Button
+                android:id="@+id/btnSize20"
+                android:layout_width="80dp"
+                android:layout_height="wrap_content"
+                android:text="20" />
+
+            <Button
+                android:id="@+id/btnSize30"
+                android:layout_width="80dp"
+                android:layout_height="wrap_content"
+                android:text="30"
+                android:layout_marginHorizontal="10dp" />
+
+            <Button
+                android:id="@+id/btnSize40"
+                android:layout_width="80dp"
+                android:layout_height="wrap_content"
+                android:text="40" />
+
+        </LinearLayout>
+
+        <Button
+            android:id="@+id/btnClose"
+            android:layout_width="200dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="15dp"
+            android:text="ЗАКРЫТЬ"
+            android:backgroundTint="#ff444444" />
+
+    </LinearLayout>
+
+</ScrollView>

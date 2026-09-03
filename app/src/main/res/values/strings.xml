@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">WiFi Monitor TV MOD</string>
+    <string name="settings_title">Настройки WiFi</string>
+    <string name="position_x_y">Позиция X и Y</string>
+    <string name="transparency">Прозрачность</string>
+    <string name="text_position">Позиция текста WiFi</string>
+    <string name="font_size">Размер шрифта (множитель)</string>
+    <string name="auto_hide">Авто-скрытие (15 сек)</string>
+    <string name="close">ЗАКРЫТЬ</string>
+</resources>
