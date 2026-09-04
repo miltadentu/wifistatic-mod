@@ -23,8 +23,8 @@ to this project's gradle.properties.
 > Task :app:mergeReleaseNativeDebugMetadata NO-SOURCE
 > Task :app:checkReleaseDuplicateClasses
 > Task :app:buildKotlinToolingMetadata
-> Task :app:checkReleaseAarMetadata
 > Task :app:generateReleaseResValues
+> Task :app:checkReleaseAarMetadata
 > Task :app:mapReleaseSourceSetPaths
 > Task :app:generateReleaseResources
 > Task :app:packageReleaseResources
@@ -43,15 +43,15 @@ The AGP Upgrade Assistant can remove the attribute from the AndroidManifest.xml 
 > Task :app:processReleaseManifest
 > Task :app:javaPreCompileRelease
 > Task :app:desugarReleaseFileDependencies
-> Task :app:mergeReleaseResources
+> Task :app:processReleaseManifestForPackage
 > Task :app:mergeReleaseArtProfile
 > Task :app:mergeReleaseShaders
-> Task :app:processReleaseManifestForPackage
 > Task :app:compileReleaseShaders NO-SOURCE
 > Task :app:generateReleaseAssets UP-TO-DATE
 > Task :app:mergeReleaseAssets
 > Task :app:compressReleaseAssets
 > Task :app:collectReleaseDependencies
+> Task :app:mergeReleaseResources
 > Task :app:sdkReleaseDependencyData
 > Task :app:writeReleaseAppMetadata
 > Task :app:writeReleaseSigningConfigVersions
@@ -79,5 +79,5 @@ PackagingOptions.jniLibs.useLegacyPackaging should be set to false because andro
 > Task :app:createReleaseApkListingFileRedirect
 > Task :app:assembleRelease
 
-BUILD SUCCESSFUL in 26s
+BUILD SUCCESSFUL in 10s
 36 actionable tasks: 36 executed
