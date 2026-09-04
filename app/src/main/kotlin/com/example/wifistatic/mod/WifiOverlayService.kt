@@ -3,14 +3,12 @@ package com.example.wifistatic.mod
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.Notification
-import android.app.PendingIntent
 import android.app.Service
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.content.SharedPreferences
-import android.graphics.drawable.GradientDrawable
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
 import android.os.Build
@@ -23,11 +21,12 @@ import android.view.WindowManager
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
-import androidx.core.content.ContextCompat
 import android.net.wifi.WifiManager
 import android.util.TypedValue
 
 class WifiOverlayService : Service() {
+
+    private enum class WifiStatus { UNKNOWN, CONNECTED, LIMITED, DISCONNECTED }
 
     private lateinit var windowManager: WindowManager
     private lateinit var params: WindowManager.LayoutParams
@@ -35,14 +34,13 @@ class WifiOverlayService : Service() {
     private lateinit var wifiText: TextView
     private lateinit var container: LinearLayout
     private lateinit var prefs: SharedPreferences
-    private lateinit var backgroundDrawable: GradientDrawable
     private lateinit var hideHandler: Handler
     private lateinit var hideRunnable: Runnable
     private var isAutoHideEnabled = false
-    private var isWifiConnected = false
     private var currentSSID = ""
     private var overlayAdded = false
     private var manuallyHidden = false
+    private var currentStatus = WifiStatus.UNKNOWN
 
     companion object {
         const val CHANNEL_ID = "wifi_service_channel"
@@ -79,7 +77,6 @@ class WifiOverlayService : Service() {
 
             windowManager = getSystemService(Context.WINDOW_SERVICE) as WindowManager
             prefs = getSharedPreferences("wifi_prefs", Context.MODE_PRIVATE)
-            backgroundDrawable = GradientDrawable()
 
             hideHandler = Handler(Looper.getMainLooper())
             hideRunnable = Runnable {
@@ -117,6 +114,24 @@ class WifiOverlayService : Service() {
         startForeground(NOTIFICATION_ID, notification)
     }
 
+    /** Реальный размер экрана в пикселях, чтобы ползунки позиции
+     *  покрывали весь экран, а не только маленький угол. */
+    private fun screenSize(): Pair<Int, Int> {
+        val dm = android.util.DisplayMetrics()
+        @Suppress("DEPRECATION")
+        windowManager.defaultDisplay.getRealMetrics(dm)
+        return dm.widthPixels to dm.heightPixels
+    }
+
+    private fun computeMaxOffsets(): Pair<Int, Int> {
+        val (w, h) = screenSize()
+        // Резервируем место под сам оверлей (иконка+текст), чтобы он не
+        // вылезал за правый/нижний край экрана на 100%.
+        val maxX = (w - 420).coerceAtLeast(50)
+        val maxY = (h - 150).coerceAtLeast(50)
+        return maxX to maxY
+    }
+
     private fun setupOverlay() {
         container = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
@@ -124,18 +139,18 @@ class WifiOverlayService : Service() {
         }
 
         wifiIcon = ImageView(this).apply {
-            setImageResource(R.drawable.ic_wifi)
-            setColorFilter(android.graphics.Color.GREEN)
+            adjustViewBounds = true
+            scaleType = ImageView.ScaleType.FIT_CENTER
         }
 
         wifiText = TextView(this).apply {
-            text = "WiFi"
-            setTextColor(android.graphics.Color.GREEN)
             setPadding(8, 0, 0, 0)
         }
 
         container.addView(wifiIcon)
         container.addView(wifiText)
+
+        applyStatus(WifiStatus.UNKNOWN)
 
         val posX = prefs.getInt("pos_x", 50)
         val posY = prefs.getInt("pos_y", 50)
@@ -154,12 +169,16 @@ class WifiOverlayService : Service() {
             format = android.graphics.PixelFormat.TRANSLUCENT
             flags = WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
                     WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE
-            width = size * 2
-            height = size * 2
-            x = (posX * 10)
-            y = (posY * 10)
+            width = WindowManager.LayoutParams.WRAP_CONTENT
+            height = WindowManager.LayoutParams.WRAP_CONTENT
+            gravity = Gravity.TOP or Gravity.START
         }
 
+        val (maxX, maxY) = computeMaxOffsets()
+        params.x = (posX / 100.0 * maxX).toInt()
+        params.y = (posY / 100.0 * maxY).toInt()
+
+        applyIconSize(size)
         updateContainerLayout(textPosition)
         updateFontSize(fontSize)
         updateAutoHideSetting(isAutoHideEnabled)
@@ -172,6 +191,12 @@ class WifiOverlayService : Service() {
             e.printStackTrace()
             stopSelf()
         }
+    }
+
+    private fun applyIconSize(size: Int) {
+        val px = (size * 2).coerceAtLeast(20)
+        val lp = LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, px)
+        wifiIcon.layoutParams = lp
     }
 
     private fun updateContainerLayout(position: Int) {
@@ -212,15 +237,20 @@ class WifiOverlayService : Service() {
         val activeNetwork = cm.activeNetwork
         val caps = cm.getNetworkCapabilities(activeNetwork)
 
-        if (caps != null) {
-            val hasWifi = caps.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)
-            if (hasWifi && !isWifiConnected) {
-                isWifiConnected = true
-                updateIconStatus("connected")
-            } else if (!hasWifi && isWifiConnected) {
-                isWifiConnected = false
-                updateIconStatus("disconnected")
-            }
+        val newStatus = when {
+            caps == null || !caps.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) -> WifiStatus.DISCONNECTED
+            caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED) -> WifiStatus.CONNECTED
+            else -> WifiStatus.LIMITED
+        }
+
+        if (newStatus != currentStatus) {
+            applyStatus(newStatus)
+        }
+
+        // На случай, если WifiManager к этому моменту уже успел вернуть SSID.
+        if (newStatus != WifiStatus.DISCONNECTED) {
+            val wm = getSystemService(Context.WIFI_SERVICE) as WifiManager
+            updateWifiInfo(wm)
         }
     }
 
@@ -229,11 +259,12 @@ class WifiOverlayService : Service() {
             val connectionInfo = wm.connectionInfo
             if (connectionInfo != null && connectionInfo.ssid != null) {
                 var ssid = connectionInfo.ssid
-                // Удаляем кавычки если они есть
                 if (ssid.startsWith("\"") && ssid.endsWith("\"")) {
                     ssid = ssid.substring(1, ssid.length - 1)
                 }
-                currentSSID = ssid
+                if (ssid != "<unknown ssid>") {
+                    currentSSID = ssid
+                }
                 updateTextDisplay()
             }
         } catch (e: Exception) {
@@ -242,27 +273,51 @@ class WifiOverlayService : Service() {
     }
 
     private fun updateTextDisplay() {
-        wifiText.text = if (isWifiConnected) currentSSID else "No WiFi"
-    }
-
-    private fun updateIconStatus(status: String) {
-        if (status == "connected") {
-            wifiIcon.setColorFilter(android.graphics.Color.GREEN)
-            updateTextDisplay()
-            if (!manuallyHidden) {
-                wifiIcon.visibility = android.view.View.VISIBLE
-                wifiText.visibility = android.view.View.VISIBLE
-            }
-        } else {
-            wifiIcon.setColorFilter(android.graphics.Color.RED)
-            wifiIcon.visibility = android.view.View.GONE
-            wifiText.visibility = android.view.View.GONE
+        wifiText.text = when (currentStatus) {
+            WifiStatus.CONNECTED, WifiStatus.LIMITED ->
+                if (currentSSID.isNotBlank()) currentSSID else "WiFi"
+            WifiStatus.DISCONNECTED -> "No WiFi"
+            WifiStatus.UNKNOWN -> "WiFi"
         }
     }
 
-    fun updatePosition(x: Int, y: Int, alpha: Int) {
-        params.x = (x * 10)
-        params.y = (y * 10)
+    /** Единая точка обновления иконки+цвета текста под 4 статуса сети,
+     *  используя реальные ассеты приложения (зелёный/жёлтый/красный/серый). */
+    private fun applyStatus(status: WifiStatus) {
+        currentStatus = status
+        val iconRes: Int
+        val color: Int
+        when (status) {
+            WifiStatus.CONNECTED -> {
+                iconRes = R.drawable.ic_wifi_green
+                color = android.graphics.Color.parseColor("#00FF00")
+            }
+            WifiStatus.LIMITED -> {
+                iconRes = R.drawable.ic_wifi_yellow
+                color = android.graphics.Color.parseColor("#FFFF00")
+            }
+            WifiStatus.DISCONNECTED -> {
+                iconRes = R.drawable.ic_wifi_red
+                color = android.graphics.Color.parseColor("#FF0000")
+            }
+            WifiStatus.UNKNOWN -> {
+                iconRes = R.drawable.ic_wifi_gray
+                color = android.graphics.Color.parseColor("#888888")
+            }
+        }
+        wifiIcon.setImageResource(iconRes)
+        wifiText.setTextColor(color)
+        updateTextDisplay()
+        if (!manuallyHidden) {
+            wifiIcon.visibility = android.view.View.VISIBLE
+            wifiText.visibility = android.view.View.VISIBLE
+        }
+    }
+
+    fun updatePosition(xPct: Int, yPct: Int, alpha: Int) {
+        val (maxX, maxY) = computeMaxOffsets()
+        params.x = (xPct / 100.0 * maxX).toInt()
+        params.y = (yPct / 100.0 * maxY).toInt()
         wifiIcon.alpha = alpha / 255f
         wifiText.alpha = alpha / 255f
         if (overlayAdded) windowManager.updateViewLayout(container, params)
@@ -273,16 +328,15 @@ class WifiOverlayService : Service() {
         }
 
         prefs.edit().apply {
-            putInt("pos_x", x)
-            putInt("pos_y", y)
+            putInt("pos_x", xPct)
+            putInt("pos_y", yPct)
             putInt("alpha", alpha)
             apply()
         }
     }
 
     fun updateSize(size: Int) {
-        params.width = size * 2
-        params.height = size * 2
+        applyIconSize(size)
         if (overlayAdded) windowManager.updateViewLayout(container, params)
 
         prefs.edit().apply {
@@ -315,8 +369,10 @@ class WifiOverlayService : Service() {
         isAutoHideEnabled = enabled
         if (!enabled) {
             hideHandler.removeCallbacks(hideRunnable)
-            wifiIcon.visibility = android.view.View.VISIBLE
-            wifiText.visibility = android.view.View.VISIBLE
+            if (!manuallyHidden) {
+                wifiIcon.visibility = android.view.View.VISIBLE
+                wifiText.visibility = android.view.View.VISIBLE
+            }
         }
     }
 

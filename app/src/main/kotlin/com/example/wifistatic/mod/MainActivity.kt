@@ -1,17 +1,22 @@
 package com.example.wifistatic.mod
 
-import android.app.ActivityManager
+import android.Manifest
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
+import android.location.LocationManager
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.os.PowerManager
 import android.provider.Settings
 import android.widget.Button
 import android.widget.CheckBox
 import android.widget.SeekBar
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 
 class MainActivity : AppCompatActivity() {
 
@@ -23,10 +28,16 @@ class MainActivity : AppCompatActivity() {
     private lateinit var cbAutoHide: CheckBox
     private lateinit var tvTextPositionLabel: TextView
     private lateinit var tvFontSizeLabel: TextView
+    private lateinit var tvPermissionsStatus: TextView
     private lateinit var btnSize20: Button
     private lateinit var btnSize30: Button
     private lateinit var btnSize40: Button
+    private lateinit var btnMinimize: Button
     private lateinit var btnClose: Button
+
+    companion object {
+        private const val REQ_LOCATION_PERM = 501
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -46,9 +57,11 @@ class MainActivity : AppCompatActivity() {
         cbAutoHide = findViewById(R.id.cbAutoHide)
         tvTextPositionLabel = findViewById(R.id.tvTextPositionLabel)
         tvFontSizeLabel = findViewById(R.id.tvFontSizeLabel)
+        tvPermissionsStatus = findViewById(R.id.tvPermissionsStatus)
         btnSize20 = findViewById(R.id.btnSize20)
         btnSize30 = findViewById(R.id.btnSize30)
         btnSize40 = findViewById(R.id.btnSize40)
+        btnMinimize = findViewById(R.id.btnMinimize)
         btnClose = findViewById(R.id.btnClose)
     }
 
@@ -150,10 +163,13 @@ class MainActivity : AppCompatActivity() {
             sbY.progress = 50
         }
 
+        // Свернуть — просто закрывает окно настроек, оверлей продолжает работать.
+        btnMinimize.setOnClickListener {
+            finish()
+        }
+
+        // Закрыть — полностью останавливает оверлей и сервис.
         btnClose.setOnClickListener {
-            // Прямой синхронный вызов внутри процесса — надёжнее, чем
-            // асинхронный stopService(), который некоторые кастомные
-            // прошивки TV-box могут проглатывать/задерживать.
             WifiOverlayService.getInstance()?.stopOverlay()
             stopService(Intent(this, WifiOverlayService::class.java))
             finish()
@@ -168,23 +184,108 @@ class MainActivity : AppCompatActivity() {
         tvFontSizeLabel.text = "${sbFontSize.progress}%"
     }
 
-    private fun startWifiService() {
+    // ---------------------------------------------------------------
+    // Цепочка проверки разрешений. Вызывается при каждом запуске/возврате
+    // в приложение (onResume), по одному шагу за раз: если чего-то не
+    // хватает — открывает нужный экран настроек и останавливается; при
+    // следующем onResume (когда пользователь вернётся) проверяет дальше.
+    // ---------------------------------------------------------------
+    private fun ensurePermissionsThenStartService() {
+        // 1. Разрешение "поверх других приложений" — без него сервис не стартует.
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !Settings.canDrawOverlays(this)) {
-            // Без этого разрешения сервис сразу упадёт при попытке
-            // показать overlay поверх других приложений.
+            updatePermissionsStatus()
             try {
-                val intent = Intent(
-                    Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
-                    Uri.parse("package:$packageName")
+                startActivity(
+                    Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:$packageName"))
                 )
-                startActivity(intent)
             } catch (e: Exception) {
-                // На некоторых прошивках TV-box этого системного экрана нет.
-                // Разрешение придётся выдать вручную (что пользователь и делает).
                 e.printStackTrace()
             }
             return
         }
+
+        // Запускаем сервис сразу, как только это возможно — иконка появится,
+        // даже если геолокация/батарея ещё не настроены.
+        if (WifiOverlayService.getInstance() == null) {
+            startWifiService()
+        }
+
+        // 2. Разрешение на геолокацию — без него Android не отдаёт SSID сети.
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
+            != PackageManager.PERMISSION_GRANTED
+        ) {
+            updatePermissionsStatus()
+            ActivityCompat.requestPermissions(
+                this, arrayOf(Manifest.permission.ACCESS_FINE_LOCATION), REQ_LOCATION_PERM
+            )
+            return
+        }
+
+        // 3. Системный тумблер "Геолокация" — даже с разрешением, если он
+        // выключен целиком, SSID не отдаётся.
+        if (!isLocationServiceEnabled()) {
+            updatePermissionsStatus()
+            try {
+                startActivity(Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS))
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+            return
+        }
+
+        // 4. Исключение из оптимизации батареи — чтобы система не убивала сервис.
+        val pm = getSystemService(Context.POWER_SERVICE) as PowerManager
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !pm.isIgnoringBatteryOptimizations(packageName)) {
+            updatePermissionsStatus()
+            try {
+                startActivity(
+                    Intent(
+                        Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS,
+                        Uri.parse("package:$packageName")
+                    )
+                )
+            } catch (e: Exception) {
+                try {
+                    startActivity(Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS))
+                } catch (e2: Exception) {
+                    e2.printStackTrace()
+                }
+            }
+            return
+        }
+
+        updatePermissionsStatus()
+    }
+
+    private fun isLocationServiceEnabled(): Boolean {
+        return try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                val lm = getSystemService(Context.LOCATION_SERVICE) as LocationManager
+                lm.isLocationEnabled
+            } else {
+                val mode = Settings.Secure.getInt(
+                    contentResolver, Settings.Secure.LOCATION_MODE, Settings.Secure.LOCATION_MODE_OFF
+                )
+                mode != Settings.Secure.LOCATION_MODE_OFF
+            }
+        } catch (e: Exception) {
+            true
+        }
+    }
+
+    private fun updatePermissionsStatus() {
+        val overlayOk = Build.VERSION.SDK_INT < Build.VERSION_CODES.M || Settings.canDrawOverlays(this)
+        val locPermOk = ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) ==
+                PackageManager.PERMISSION_GRANTED
+        val locServiceOk = isLocationServiceEnabled()
+        val batteryOk = Build.VERSION.SDK_INT < Build.VERSION_CODES.M ||
+                (getSystemService(Context.POWER_SERVICE) as PowerManager).isIgnoringBatteryOptimizations(packageName)
+
+        fun mark(ok: Boolean) = if (ok) "\u2713" else "\u2717"
+        tvPermissionsStatus.text = "Overlay ${mark(overlayOk)}  Геолокация ${mark(locPermOk && locServiceOk)}  Батарея ${mark(batteryOk)}"
+    }
+
+    private fun startWifiService() {
         val intent = Intent(this, WifiOverlayService::class.java)
         try {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -197,22 +298,27 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        // Независимо от результата продолжаем цепочку проверок дальше —
+        // если отказали, при следующем открытии приложения спросим снова.
+        ensurePermissionsThenStartService()
+    }
+
     override fun onResume() {
         super.onResume()
         try {
-            // Пользователь мог только что вернуться из настроек, дав разрешение.
-            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M || Settings.canDrawOverlays(this)) {
-                if (WifiOverlayService.getInstance() == null) {
-                    startWifiService()
-                }
-            }
+            ensurePermissionsThenStartService()
         } catch (e: Exception) {
             e.printStackTrace()
         }
     }
 
-    override fun onDestroy() {
-        super.onDestroy()
-        stopService(Intent(this, WifiOverlayService::class.java))
-    }
+    // Специально НЕ останавливаем сервис в onDestroy — оверлей должен жить
+    // независимо от того, закрыт ли экран настроек (через back, сворачивание
+    // и т.д.). Полная остановка — только через явную кнопку "Закрыть".
 }
