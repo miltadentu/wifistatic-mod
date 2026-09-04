@@ -7,6 +7,7 @@ import subprocess
 import json
 import base64
 import os
+import tempfile
 
 REPO = "miltadentu/wifistatic-mod"
 BRANCH = "ci-apk"
@@ -20,10 +21,16 @@ def gh(method, url, data=None):
         "-H", f"Authorization: token {TOKEN}",
         "-H", "Content-Type: application/json",
     ]
+    tmp_path = None
     if data is not None:
-        cmd += ["-d", json.dumps(data)]
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as tf:
+            json.dump(data, tf)
+            tmp_path = tf.name
+        cmd += ["-d", f"@{tmp_path}"]
     cmd += [url]
     proc = subprocess.run(cmd, capture_output=True, text=True)
+    if tmp_path:
+        os.unlink(tmp_path)
     out = proc.stdout
     if not out:
         print(f"EMPTY RESPONSE for {method} {url}, stderr={proc.stderr}")
@@ -42,9 +49,11 @@ def main():
     main_ref = gh("GET", f"{API}/repos/{REPO}/git/ref/heads/main")
     main_sha = main_ref["object"]["sha"]
 
-    # Ensure ci-apk branch exists (ignore error if it already does)
-    gh("POST", f"{API}/repos/{REPO}/git/refs",
-       {"ref": f"refs/heads/{BRANCH}", "sha": main_sha})
+    # Ensure ci-apk branch exists (ignore "already exists" — that's fine)
+    ref_result = gh("POST", f"{API}/repos/{REPO}/git/refs",
+                     {"ref": f"refs/heads/{BRANCH}", "sha": main_sha})
+    if isinstance(ref_result, dict) and ref_result.get("message") == "Reference already exists":
+        pass  # expected on subsequent runs
 
     candidates = [
         ("debug", "app/build/outputs/apk/debug/app-debug.apk"),
