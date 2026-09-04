@@ -55,30 +55,36 @@ class WifiOverlayService : Service() {
         super.onCreate()
         instance = this
 
-        // Must call startForeground() ASAP after startForegroundService(),
-        // otherwise Android 8+ kills the process with an exception.
-        startForegroundWithNotification()
+        try {
+            // Must call startForeground() ASAP after startForegroundService(),
+            // otherwise Android 8+ kills the process with an exception.
+            startForegroundWithNotification()
 
-        // Without this permission, WindowManager.addView() with
-        // TYPE_APPLICATION_OVERLAY throws and instantly crashes the service.
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !Settings.canDrawOverlays(this)) {
+            // Without this permission, WindowManager.addView() with
+            // TYPE_APPLICATION_OVERLAY throws and instantly crashes the service.
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !Settings.canDrawOverlays(this)) {
+                android.util.Log.e("WifiOverlayMod", "No overlay permission, stopping")
+                stopSelf()
+                return
+            }
+
+            windowManager = getSystemService(Context.WINDOW_SERVICE) as WindowManager
+            prefs = getSharedPreferences("wifi_prefs", Context.MODE_PRIVATE)
+            backgroundDrawable = GradientDrawable()
+
+            hideHandler = Handler(Looper.getMainLooper())
+            hideRunnable = Runnable {
+                wifiIcon.visibility = android.view.View.GONE
+                wifiText.visibility = android.view.View.GONE
+            }
+
+            setupOverlay()
+            startNetworkMonitoring()
+            checkCurrentStatus()
+        } catch (t: Throwable) {
+            android.util.Log.e("WifiOverlayMod", "Fatal error in onCreate", t)
             stopSelf()
-            return
         }
-
-        windowManager = getSystemService(Context.WINDOW_SERVICE) as WindowManager
-        prefs = getSharedPreferences("wifi_prefs", Context.MODE_PRIVATE)
-        backgroundDrawable = GradientDrawable()
-
-        hideHandler = Handler(Looper.getMainLooper())
-        hideRunnable = Runnable {
-            wifiIcon.visibility = android.view.View.GONE
-            wifiText.visibility = android.view.View.GONE
-        }
-
-        setupOverlay()
-        startNetworkMonitoring()
-        checkCurrentStatus()
     }
 
     private fun startForegroundWithNotification() {
