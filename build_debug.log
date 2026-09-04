@@ -39,10 +39,10 @@ Installing Android SDK Build-Tools 33.0.1 in /usr/local/lib/android/sdk/build-to
 > Task :app:mapDebugSourceSetPaths
 > Task :app:generateDebugResources
 > Task :app:packageDebugResources
+> Task :app:mergeDebugResources
 > Task :app:createDebugCompatibleScreenManifests
 > Task :app:extractDeepLinksDebug
 > Task :app:parseDebugLocalResources
-> Task :app:mergeDebugResources
 
 > Task :app:processDebugMainManifest
 package="com.example.wifistatic.mod" found in source AndroidManifest.xml: /home/runner/work/wifistatic-mod/wifistatic-mod/app/src/main/AndroidManifest.xml.
@@ -55,11 +55,11 @@ The AGP Upgrade Assistant can remove the attribute from the AndroidManifest.xml 
 > Task :app:processDebugManifest
 > Task :app:javaPreCompileDebug
 > Task :app:mergeDebugShaders
-> Task :app:processDebugManifestForPackage
 > Task :app:compileDebugShaders NO-SOURCE
 > Task :app:generateDebugAssets UP-TO-DATE
 > Task :app:mergeDebugAssets
 > Task :app:compressDebugAssets
+> Task :app:processDebugManifestForPackage
 > Task :app:checkDebugDuplicateClasses
 > Task :app:processDebugResources
 > Task :app:desugarDebugFileDependencies
@@ -70,19 +70,19 @@ w: file:///home/runner/work/wifistatic-mod/wifistatic-mod/app/src/main/kotlin/co
 w: file:///home/runner/work/wifistatic-mod/wifistatic-mod/app/src/main/kotlin/com/example/wifistatic/mod/WifiOverlayService.kt:136:35 'SUPPLICANT_STATE_CHANGED_ACTION: String' is deprecated. Deprecated in Java
 w: file:///home/runner/work/wifistatic-mod/wifistatic-mod/app/src/main/kotlin/com/example/wifistatic/mod/WifiOverlayService.kt:160:37 'getter for connectionInfo: WifiInfo!' is deprecated. Deprecated in Java
 
-> Task :app:mergeExtDexDebug
 > Task :app:compileDebugJavaWithJavac NO-SOURCE
 > Task :app:processDebugJavaRes
 > Task :app:mergeLibDexDebug
-> Task :app:mergeDebugJavaResource
 > Task :app:dexBuilderDebug
 > Task :app:mergeDebugJniLibFolders
+> Task :app:mergeDebugJavaResource
+> Task :app:mergeProjectDexDebug
 > Task :app:mergeDebugNativeLibs NO-SOURCE
 > Task :app:stripDebugDebugSymbols NO-SOURCE
-> Task :app:mergeProjectDexDebug
 > Task :app:validateSigningDebug
 > Task :app:writeDebugAppMetadata
 > Task :app:writeDebugSigningConfigVersions
+> Task :app:mergeExtDexDebug
 
 > Task :app:packageDebug
 PackagingOptions.jniLibs.useLegacyPackaging should be set to false because android:extractNativeLibs is set to "false" in AndroidManifest.xml. Avoid setting android:extractNativeLibs="false" explicitly in AndroidManifest.xml, and instead set android.packagingOptions.jniLibs.useLegacyPackaging to false in the build.gradle file.
@@ -90,5 +90,5 @@ PackagingOptions.jniLibs.useLegacyPackaging should be set to false because andro
 > Task :app:createDebugApkListingFileRedirect
 > Task :app:assembleDebug
 
-BUILD SUCCESSFUL in 1m 51s
+BUILD SUCCESSFUL in 1m 43s
 31 actionable tasks: 31 executed
