@@ -23,14 +23,14 @@ to this project's gradle.properties.
 > Task :app:mergeReleaseNativeDebugMetadata NO-SOURCE
 > Task :app:checkReleaseDuplicateClasses
 > Task :app:buildKotlinToolingMetadata
-> Task :app:checkReleaseAarMetadata
 > Task :app:generateReleaseResValues
+> Task :app:checkReleaseAarMetadata
 > Task :app:mapReleaseSourceSetPaths
 > Task :app:generateReleaseResources
 > Task :app:packageReleaseResources
 > Task :app:createReleaseCompatibleScreenManifests
-> Task :app:extractDeepLinksRelease
 > Task :app:parseReleaseLocalResources
+> Task :app:extractDeepLinksRelease
 
 > Task :app:processReleaseMainManifest
 package="com.example.wifistatic.mod" found in source AndroidManifest.xml: /home/runner/work/wifistatic-mod/wifistatic-mod/app/src/main/AndroidManifest.xml.
@@ -60,10 +60,10 @@ The AGP Upgrade Assistant can remove the attribute from the AndroidManifest.xml 
 > Task :app:mergeExtDexRelease
 
 > Task :app:compileReleaseKotlin
-w: file:///home/runner/work/wifistatic-mod/wifistatic-mod/app/src/main/kotlin/com/example/wifistatic/mod/WifiOverlayService.kt:180:13 Variable 'cm' is never used
-w: file:///home/runner/work/wifistatic-mod/wifistatic-mod/app/src/main/kotlin/com/example/wifistatic/mod/WifiOverlayService.kt:191:43 'CONNECTIVITY_ACTION: String' is deprecated. Deprecated in Java
-w: file:///home/runner/work/wifistatic-mod/wifistatic-mod/app/src/main/kotlin/com/example/wifistatic/mod/WifiOverlayService.kt:193:35 'SUPPLICANT_STATE_CHANGED_ACTION: String' is deprecated. Deprecated in Java
-w: file:///home/runner/work/wifistatic-mod/wifistatic-mod/app/src/main/kotlin/com/example/wifistatic/mod/WifiOverlayService.kt:221:37 'getter for connectionInfo: WifiInfo!' is deprecated. Deprecated in Java
+w: file:///home/runner/work/wifistatic-mod/wifistatic-mod/app/src/main/kotlin/com/example/wifistatic/mod/WifiOverlayService.kt:179:13 Variable 'cm' is never used
+w: file:///home/runner/work/wifistatic-mod/wifistatic-mod/app/src/main/kotlin/com/example/wifistatic/mod/WifiOverlayService.kt:190:43 'CONNECTIVITY_ACTION: String' is deprecated. Deprecated in Java
+w: file:///home/runner/work/wifistatic-mod/wifistatic-mod/app/src/main/kotlin/com/example/wifistatic/mod/WifiOverlayService.kt:192:35 'SUPPLICANT_STATE_CHANGED_ACTION: String' is deprecated. Deprecated in Java
+w: file:///home/runner/work/wifistatic-mod/wifistatic-mod/app/src/main/kotlin/com/example/wifistatic/mod/WifiOverlayService.kt:220:37 'getter for connectionInfo: WifiInfo!' is deprecated. Deprecated in Java
 
 > Task :app:compileReleaseJavaWithJavac NO-SOURCE
 > Task :app:dexBuilderRelease
@@ -79,5 +79,5 @@ PackagingOptions.jniLibs.useLegacyPackaging should be set to false because andro
 > Task :app:createReleaseApkListingFileRedirect
 > Task :app:assembleRelease
 
-BUILD SUCCESSFUL in 29s
+BUILD SUCCESSFUL in 18s
 36 actionable tasks: 36 executed
