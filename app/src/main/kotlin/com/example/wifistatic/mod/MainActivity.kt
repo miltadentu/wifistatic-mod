@@ -3,8 +3,10 @@ package com.example.wifistatic.mod
 import android.app.ActivityManager
 import android.content.Context
 import android.content.Intent
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.provider.Settings
 import android.widget.Button
 import android.widget.CheckBox
 import android.widget.SeekBar
@@ -33,7 +35,6 @@ class MainActivity : AppCompatActivity() {
         initViews()
         loadSettings()
         setupListeners()
-        startWifiService()
     }
 
     private fun initViews() {
@@ -165,11 +166,31 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun startWifiService() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !Settings.canDrawOverlays(this)) {
+            // Без этого разрешения сервис сразу упадёт при попытке
+            // показать overlay поверх других приложений.
+            val intent = Intent(
+                Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                Uri.parse("package:$packageName")
+            )
+            startActivity(intent)
+            return
+        }
         val intent = Intent(this, WifiOverlayService::class.java)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             startForegroundService(intent)
         } else {
             startService(intent)
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        // Пользователь мог только что вернуться из настроек, дав разрешение.
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M || Settings.canDrawOverlays(this)) {
+            if (WifiOverlayService.getInstance() == null) {
+                startWifiService()
+            }
         }
     }
 

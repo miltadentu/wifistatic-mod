@@ -1,5 +1,9 @@
 package com.example.wifistatic.mod
 
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.app.Notification
+import android.app.PendingIntent
 import android.app.Service
 import android.content.BroadcastReceiver
 import android.content.Context
@@ -9,9 +13,11 @@ import android.content.SharedPreferences
 import android.graphics.drawable.GradientDrawable
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
+import android.os.Build
 import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
+import android.provider.Settings
 import android.view.Gravity
 import android.view.WindowManager
 import android.widget.ImageView
@@ -35,9 +41,11 @@ class WifiOverlayService : Service() {
     private var isAutoHideEnabled = false
     private var isWifiConnected = false
     private var currentSSID = ""
+    private var overlayAdded = false
 
     companion object {
         const val CHANNEL_ID = "wifi_service_channel"
+        const val NOTIFICATION_ID = 1001
         private var instance: WifiOverlayService? = null
 
         fun getInstance(): WifiOverlayService? = instance
@@ -46,6 +54,17 @@ class WifiOverlayService : Service() {
     override fun onCreate() {
         super.onCreate()
         instance = this
+
+        // Must call startForeground() ASAP after startForegroundService(),
+        // otherwise Android 8+ kills the process with an exception.
+        startForegroundWithNotification()
+
+        // Without this permission, WindowManager.addView() with
+        // TYPE_APPLICATION_OVERLAY throws and instantly crashes the service.
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !Settings.canDrawOverlays(this)) {
+            stopSelf()
+            return
+        }
 
         windowManager = getSystemService(Context.WINDOW_SERVICE) as WindowManager
         prefs = getSharedPreferences("wifi_prefs", Context.MODE_PRIVATE)
@@ -60,6 +79,27 @@ class WifiOverlayService : Service() {
         setupOverlay()
         startNetworkMonitoring()
         checkCurrentStatus()
+    }
+
+    private fun startForegroundWithNotification() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val channel = NotificationChannel(
+                CHANNEL_ID,
+                "WiFi Monitor",
+                NotificationManager.IMPORTANCE_MIN
+            )
+            val manager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            manager.createNotificationChannel(channel)
+        }
+
+        val notification: Notification = Notification.Builder(this, CHANNEL_ID)
+            .setContentTitle("WiFi Monitor")
+            .setContentText("Отображение статуса WiFi активно")
+            .setSmallIcon(android.R.drawable.ic_dialog_info)
+            .setOngoing(true)
+            .build()
+
+        startForeground(NOTIFICATION_ID, notification)
     }
 
     private fun setupOverlay() {
@@ -90,7 +130,12 @@ class WifiOverlayService : Service() {
         val fontSize = prefs.getInt("font_size", 100)
 
         params = WindowManager.LayoutParams().apply {
-            type = WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
+            type = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
+            } else {
+                @Suppress("DEPRECATION")
+                WindowManager.LayoutParams.TYPE_SYSTEM_ALERT
+            }
             format = android.graphics.PixelFormat.TRANSLUCENT
             flags = WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
                     WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE
@@ -106,7 +151,13 @@ class WifiOverlayService : Service() {
         updateAutoHideSetting(isAutoHideEnabled)
 
         container.alpha = alpha / 255f
-        windowManager.addView(container, params)
+        try {
+            windowManager.addView(container, params)
+            overlayAdded = true
+        } catch (e: Exception) {
+            e.printStackTrace()
+            stopSelf()
+        }
     }
 
     private fun updateContainerLayout(position: Int) {
@@ -135,7 +186,11 @@ class WifiOverlayService : Service() {
             addAction(WifiManager.NETWORK_STATE_CHANGED_ACTION)
             addAction(WifiManager.SUPPLICANT_STATE_CHANGED_ACTION)
         }
-        registerReceiver(broadcastReceiver, filter, Context.RECEIVER_EXPORTED)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            registerReceiver(broadcastReceiver, filter, Context.RECEIVER_EXPORTED)
+        } else {
+            registerReceiver(broadcastReceiver, filter)
+        }
     }
 
     private fun checkCurrentStatus() {

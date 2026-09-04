@@ -10,9 +10,9 @@ android {
     defaultConfig {
         applicationId = "com.example.wifistatic.mod"
         minSdk = 21
-        targetSdk = 34
-        versionCode = 2
-        versionName = "2.0"
+        targetSdk = 29
+        versionCode = 3
+        versionName = "2.1"
     }
 
     buildTypes {
