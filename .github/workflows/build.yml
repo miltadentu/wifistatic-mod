@@ -54,7 +54,14 @@ jobs:
       if: always()
       env:
         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      run: python3 scripts/commit_apk.py
+      run: python3 scripts/commit_apk.py 2>&1 | tee commit_apk.log
+      continue-on-error: true
+
+    - name: Upload commit_apk log
+      if: always()
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: python3 scripts/upload_log.py commit_apk.log commit_apk.log
 
     - name: Fail job if any build failed
       if: steps.build_debug.outcome == 'failure' || steps.build_release.outcome == 'failure'

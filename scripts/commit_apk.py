@@ -23,8 +23,19 @@ def gh(method, url, data=None):
     if data is not None:
         cmd += ["-d", json.dumps(data)]
     cmd += [url]
-    out = subprocess.run(cmd, capture_output=True, text=True).stdout
-    return json.loads(out) if out else {}
+    proc = subprocess.run(cmd, capture_output=True, text=True)
+    out = proc.stdout
+    if not out:
+        print(f"EMPTY RESPONSE for {method} {url}, stderr={proc.stderr}")
+        return {}
+    try:
+        result = json.loads(out)
+    except json.JSONDecodeError:
+        print(f"NON-JSON RESPONSE for {method} {url}: {out[:500]}")
+        return {}
+    if isinstance(result, dict) and "message" in result and ("sha" not in result and "object" not in result):
+        print(f"API MESSAGE for {method} {url}: {result.get('message')} | {result.get('errors', '')}")
+    return result
 
 
 def main():
