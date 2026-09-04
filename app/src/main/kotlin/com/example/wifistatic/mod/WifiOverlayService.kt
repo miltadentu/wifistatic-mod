@@ -152,7 +152,6 @@ class WifiOverlayService : Service() {
         }
 
         updateContainerLayout(textPosition)
-        updateSize(size)
         updateFontSize(fontSize)
         updateAutoHideSetting(isAutoHideEnabled)
 
@@ -255,7 +254,7 @@ class WifiOverlayService : Service() {
         params.y = (y * 10)
         wifiIcon.alpha = alpha / 255f
         wifiText.alpha = alpha / 255f
-        windowManager.updateViewLayout(container, params)
+        if (overlayAdded) windowManager.updateViewLayout(container, params)
 
         if (isAutoHideEnabled) {
             hideHandler.removeCallbacks(hideRunnable)
@@ -273,7 +272,7 @@ class WifiOverlayService : Service() {
     fun updateSize(size: Int) {
         params.width = size * 2
         params.height = size * 2
-        windowManager.updateViewLayout(container, params)
+        if (overlayAdded) windowManager.updateViewLayout(container, params)
 
         prefs.edit().apply {
             putInt("size", size)
@@ -283,7 +282,7 @@ class WifiOverlayService : Service() {
 
     fun updateTextPosition(position: Int) {
         updateContainerLayout(position)
-        windowManager.updateViewLayout(container, params)
+        if (overlayAdded) windowManager.updateViewLayout(container, params)
 
         prefs.edit().apply {
             putInt("text_position", position)
@@ -293,7 +292,7 @@ class WifiOverlayService : Service() {
 
     fun updateFontSizeMultiplier(percentage: Int) {
         updateFontSize(percentage)
-        windowManager.updateViewLayout(container, params)
+        if (overlayAdded) windowManager.updateViewLayout(container, params)
 
         prefs.edit().apply {
             putInt("font_size", percentage)
