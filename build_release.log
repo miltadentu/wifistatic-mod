@@ -29,8 +29,8 @@ to this project's gradle.properties.
 > Task :app:generateReleaseResources
 > Task :app:packageReleaseResources
 > Task :app:createReleaseCompatibleScreenManifests
-> Task :app:parseReleaseLocalResources
 > Task :app:extractDeepLinksRelease
+> Task :app:parseReleaseLocalResources
 
 > Task :app:processReleaseMainManifest
 package="com.example.wifistatic.mod" found in source AndroidManifest.xml: /home/runner/work/wifistatic-mod/wifistatic-mod/app/src/main/AndroidManifest.xml.
@@ -44,10 +44,10 @@ The AGP Upgrade Assistant can remove the attribute from the AndroidManifest.xml 
 > Task :app:javaPreCompileRelease
 > Task :app:desugarReleaseFileDependencies
 > Task :app:mergeReleaseResources
-> Task :app:processReleaseManifestForPackage
 > Task :app:mergeReleaseArtProfile
 > Task :app:mergeReleaseShaders
 > Task :app:compileReleaseShaders NO-SOURCE
+> Task :app:processReleaseManifestForPackage
 > Task :app:generateReleaseAssets UP-TO-DATE
 > Task :app:mergeReleaseAssets
 > Task :app:compressReleaseAssets
