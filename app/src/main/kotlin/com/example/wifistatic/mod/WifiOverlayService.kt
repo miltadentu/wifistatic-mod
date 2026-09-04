@@ -42,10 +42,19 @@ class WifiOverlayService : Service() {
     private var isWifiConnected = false
     private var currentSSID = ""
     private var overlayAdded = false
+    private var manuallyHidden = false
 
     companion object {
         const val CHANNEL_ID = "wifi_service_channel"
         const val NOTIFICATION_ID = 1001
+
+        // Внешнее управление, например через:
+        //   su 0 sh -c "am start-foreground-service -n com.example.wifistatic.mod/.WifiOverlayService -a com.example.wifistatic.mod.ACTION_SHOW"
+        const val ACTION_SHOW = "com.example.wifistatic.mod.ACTION_SHOW"
+        const val ACTION_HIDE = "com.example.wifistatic.mod.ACTION_HIDE"
+        const val ACTION_TOGGLE = "com.example.wifistatic.mod.ACTION_TOGGLE"
+        const val ACTION_STOP = "com.example.wifistatic.mod.ACTION_STOP"
+
         private var instance: WifiOverlayService? = null
 
         fun getInstance(): WifiOverlayService? = instance
@@ -115,7 +124,7 @@ class WifiOverlayService : Service() {
         }
 
         wifiIcon = ImageView(this).apply {
-            setImageResource(android.R.drawable.ic_dialog_info)
+            setImageResource(R.drawable.ic_wifi)
             setColorFilter(android.graphics.Color.GREEN)
         }
 
@@ -239,9 +248,11 @@ class WifiOverlayService : Service() {
     private fun updateIconStatus(status: String) {
         if (status == "connected") {
             wifiIcon.setColorFilter(android.graphics.Color.GREEN)
-            wifiIcon.visibility = android.view.View.VISIBLE
-            wifiText.visibility = android.view.View.VISIBLE
             updateTextDisplay()
+            if (!manuallyHidden) {
+                wifiIcon.visibility = android.view.View.VISIBLE
+                wifiText.visibility = android.view.View.VISIBLE
+            }
         } else {
             wifiIcon.setColorFilter(android.graphics.Color.RED)
             wifiIcon.visibility = android.view.View.GONE
@@ -309,10 +320,50 @@ class WifiOverlayService : Service() {
         }
     }
 
+    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        when (intent?.action) {
+            ACTION_SHOW -> setOverlayVisible(true)
+            ACTION_HIDE -> setOverlayVisible(false)
+            ACTION_TOGGLE -> setOverlayVisible(!isOverlayCurrentlyVisible())
+            ACTION_STOP -> stopOverlay()
+        }
+        return START_STICKY
+    }
+
+    private fun isOverlayCurrentlyVisible(): Boolean {
+        return overlayAdded && wifiIcon.visibility == android.view.View.VISIBLE
+    }
+
+    private fun setOverlayVisible(visible: Boolean) {
+        if (!overlayAdded) return
+        manuallyHidden = !visible
+        val v = if (visible) android.view.View.VISIBLE else android.view.View.GONE
+        wifiIcon.visibility = v
+        wifiText.visibility = v
+    }
+
+    /** Синхронно убирает overlay и останавливает сервис. Безопасно вызывать
+     *  напрямую из MainActivity в том же процессе — надёжнее, чем
+     *  асинхронный stopService() на некоторых кастомных прошивках. */
+    fun stopOverlay() {
+        try {
+            if (overlayAdded) {
+                windowManager.removeView(container)
+                overlayAdded = false
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+        stopSelf()
+    }
+
     override fun onDestroy() {
         super.onDestroy()
         try {
-            windowManager.removeView(container)
+            if (overlayAdded) {
+                windowManager.removeView(container)
+                overlayAdded = false
+            }
         } catch (e: Exception) {
             e.printStackTrace()
         }

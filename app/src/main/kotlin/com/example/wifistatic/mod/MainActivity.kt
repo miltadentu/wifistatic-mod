@@ -67,12 +67,11 @@ class MainActivity : AppCompatActivity() {
 
     private fun setupListeners() {
         val prefs = getSharedPreferences("wifi_prefs", Context.MODE_PRIVATE)
-        val service = WifiOverlayService.getInstance()
 
         sbX.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
                 if (fromUser) {
-                    service?.updatePosition(progress, sbY.progress, sbAlpha.progress)
+                    WifiOverlayService.getInstance()?.updatePosition(progress, sbY.progress, sbAlpha.progress)
                 }
             }
 
@@ -83,7 +82,7 @@ class MainActivity : AppCompatActivity() {
         sbY.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
                 if (fromUser) {
-                    service?.updatePosition(sbX.progress, progress, sbAlpha.progress)
+                    WifiOverlayService.getInstance()?.updatePosition(sbX.progress, progress, sbAlpha.progress)
                 }
             }
 
@@ -94,7 +93,7 @@ class MainActivity : AppCompatActivity() {
         sbAlpha.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
                 if (fromUser) {
-                    service?.updatePosition(sbX.progress, sbY.progress, progress)
+                    WifiOverlayService.getInstance()?.updatePosition(sbX.progress, sbY.progress, progress)
                 }
             }
 
@@ -106,7 +105,7 @@ class MainActivity : AppCompatActivity() {
             override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
                 if (fromUser) {
                     updateTextPositionLabel()
-                    service?.updateTextPosition(progress)
+                    WifiOverlayService.getInstance()?.updateTextPosition(progress)
                     prefs.edit().putInt("text_position", progress).apply()
                 }
             }
@@ -119,7 +118,7 @@ class MainActivity : AppCompatActivity() {
             override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
                 if (fromUser) {
                     updateFontSizeLabel()
-                    service?.updateFontSizeMultiplier(progress)
+                    WifiOverlayService.getInstance()?.updateFontSizeMultiplier(progress)
                     prefs.edit().putInt("font_size", progress).apply()
                 }
             }
@@ -129,29 +128,33 @@ class MainActivity : AppCompatActivity() {
         })
 
         cbAutoHide.setOnCheckedChangeListener { _, isChecked ->
-            service?.updateAutoHideSetting(isChecked)
+            WifiOverlayService.getInstance()?.updateAutoHideSetting(isChecked)
             prefs.edit().putBoolean("auto_hide", isChecked).apply()
         }
 
         btnSize20.setOnClickListener {
-            service?.updateSize(20)
+            WifiOverlayService.getInstance()?.updateSize(20)
             sbX.progress = 50
             sbY.progress = 50
         }
 
         btnSize30.setOnClickListener {
-            service?.updateSize(30)
+            WifiOverlayService.getInstance()?.updateSize(30)
             sbX.progress = 50
             sbY.progress = 50
         }
 
         btnSize40.setOnClickListener {
-            service?.updateSize(40)
+            WifiOverlayService.getInstance()?.updateSize(40)
             sbX.progress = 50
             sbY.progress = 50
         }
 
         btnClose.setOnClickListener {
+            // Прямой синхронный вызов внутри процесса — надёжнее, чем
+            // асинхронный stopService(), который некоторые кастомные
+            // прошивки TV-box могут проглатывать/задерживать.
+            WifiOverlayService.getInstance()?.stopOverlay()
             stopService(Intent(this, WifiOverlayService::class.java))
             finish()
         }
