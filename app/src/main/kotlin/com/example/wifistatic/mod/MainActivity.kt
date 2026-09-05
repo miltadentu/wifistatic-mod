@@ -313,6 +313,9 @@ class MainActivity : AppCompatActivity() {
         super.onResume()
         try {
             ensurePermissionsThenStartService()
+            // Разрешение на геолокацию могло появиться только что — заставляем
+            // уже запущенный сервис попробовать прочитать SSID заново.
+            WifiOverlayService.getInstance()?.refreshStatus()
         } catch (e: Exception) {
             e.printStackTrace()
         }

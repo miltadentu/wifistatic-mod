@@ -232,6 +232,14 @@ class WifiOverlayService : Service() {
         }
     }
 
+    /** Вызывается извне (из MainActivity) после того как пользователь мог
+     *  выдать разрешение на геолокацию — событий подключения/отключения
+     *  WiFi при этом не происходит, поэтому сервис сам не узнает,
+     *  что теперь можно попробовать прочитать SSID ещё раз. */
+    fun refreshStatus() {
+        checkCurrentStatus()
+    }
+
     private fun checkCurrentStatus() {
         val cm = getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
         val activeNetwork = cm.activeNetwork
@@ -404,11 +412,22 @@ class WifiOverlayService : Service() {
     fun stopOverlay() {
         try {
             if (overlayAdded) {
+                // На некоторых слабых GPU/композиторах (замечено на
+                // Amlogic/Droidlogic прошивках) окно может визуально не
+                // перерисоваться сразу после удаления — явно скрываем
+                // содержимое и просим перерисовку перед removeView().
+                wifiIcon.visibility = android.view.View.GONE
+                wifiText.visibility = android.view.View.GONE
+                container.invalidate()
+                container.requestLayout()
                 windowManager.removeView(container)
                 overlayAdded = false
+                android.util.Log.i("WifiOverlayMod", "Overlay removed via stopOverlay()")
+            } else {
+                android.util.Log.w("WifiOverlayMod", "stopOverlay() called but overlayAdded was already false")
             }
         } catch (e: Exception) {
-            e.printStackTrace()
+            android.util.Log.e("WifiOverlayMod", "Error removing overlay in stopOverlay()", e)
         }
         stopSelf()
     }
