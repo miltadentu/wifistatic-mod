@@ -155,9 +155,10 @@ class WifiOverlayService : Service() {
         val posX = prefs.getInt("pos_x", 50)
         val posY = prefs.getInt("pos_y", 50)
         val alpha = prefs.getInt("alpha", 200)
-        val size = prefs.getInt("size", 30)
+        val iconSize = prefs.getInt("icon_size", 60)
+        val textSizeSp = prefs.getInt("text_size", 24)
         val textPosition = prefs.getInt("text_position", 0) // 0 = right, 1 = bottom
-        val fontSize = prefs.getInt("font_size", 100)
+        isAutoHideEnabled = prefs.getBoolean("auto_hide", false)
 
         params = WindowManager.LayoutParams().apply {
             type = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -178,24 +179,25 @@ class WifiOverlayService : Service() {
         params.x = (posX / 100.0 * maxX).toInt()
         params.y = (posY / 100.0 * maxY).toInt()
 
-        applyIconSize(size)
+        applyIconSize(iconSize)
         updateContainerLayout(textPosition)
-        updateFontSize(fontSize)
-        updateAutoHideSetting(isAutoHideEnabled)
+        updateFontSize(textSizeSp)
 
         container.alpha = alpha / 255f
         try {
             windowManager.addView(container, params)
             overlayAdded = true
+            scheduleAutoHide()
         } catch (e: Exception) {
             e.printStackTrace()
             stopSelf()
         }
     }
 
-    private fun applyIconSize(size: Int) {
-        val px = (size * 2).coerceAtLeast(20)
-        val lp = LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, px)
+    /** Иконка и текст — независимые размеры, без взаимной привязки. */
+    private fun applyIconSize(px: Int) {
+        val h = px.coerceAtLeast(20)
+        val lp = LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, h)
         wifiIcon.layoutParams = lp
     }
 
@@ -203,10 +205,18 @@ class WifiOverlayService : Service() {
         container.orientation = if (position == 0) LinearLayout.HORIZONTAL else LinearLayout.VERTICAL
     }
 
-    private fun updateFontSize(percentage: Int) {
-        val baseSizeSp = prefs.getInt("size", 30)
-        val textSizeSp = (baseSizeSp * percentage / 100f)
-        wifiText.setTextSize(TypedValue.COMPLEX_UNIT_SP, textSizeSp)
+    private fun updateFontSize(sp: Int) {
+        wifiText.setTextSize(TypedValue.COMPLEX_UNIT_SP, sp.coerceAtLeast(8).toFloat())
+    }
+
+    /** Единая точка планирования авто-скрытия: вызывается при КАЖДОМ
+     *  показе оверлея (не только при движении ползунка позиции, как было
+     *  раньше — из-за чего таймер часто вообще не запускался). */
+    private fun scheduleAutoHide() {
+        hideHandler.removeCallbacks(hideRunnable)
+        if (isAutoHideEnabled && !manuallyHidden) {
+            hideHandler.postDelayed(hideRunnable, 15000)
+        }
     }
 
     private fun startNetworkMonitoring() {
@@ -319,6 +329,7 @@ class WifiOverlayService : Service() {
         if (!manuallyHidden) {
             wifiIcon.visibility = android.view.View.VISIBLE
             wifiText.visibility = android.view.View.VISIBLE
+            scheduleAutoHide()
         }
     }
 
@@ -330,11 +341,6 @@ class WifiOverlayService : Service() {
         wifiText.alpha = alpha / 255f
         if (overlayAdded) windowManager.updateViewLayout(container, params)
 
-        if (isAutoHideEnabled) {
-            hideHandler.removeCallbacks(hideRunnable)
-            hideHandler.postDelayed(hideRunnable, 15000)
-        }
-
         prefs.edit().apply {
             putInt("pos_x", xPct)
             putInt("pos_y", yPct)
@@ -343,12 +349,13 @@ class WifiOverlayService : Service() {
         }
     }
 
-    fun updateSize(size: Int) {
-        applyIconSize(size)
+    /** Размер иконки — независим от размера текста. */
+    fun updateIconSize(px: Int) {
+        applyIconSize(px)
         if (overlayAdded) windowManager.updateViewLayout(container, params)
 
         prefs.edit().apply {
-            putInt("size", size)
+            putInt("icon_size", px)
             apply()
         }
     }
@@ -363,24 +370,30 @@ class WifiOverlayService : Service() {
         }
     }
 
-    fun updateFontSizeMultiplier(percentage: Int) {
-        updateFontSize(percentage)
+    /** Размер текста (SSID) в sp — независим от размера иконки. */
+    fun updateTextSize(sp: Int) {
+        updateFontSize(sp)
         if (overlayAdded) windowManager.updateViewLayout(container, params)
 
         prefs.edit().apply {
-            putInt("font_size", percentage)
+            putInt("text_size", sp)
             apply()
         }
     }
 
     fun updateAutoHideSetting(enabled: Boolean) {
         isAutoHideEnabled = enabled
+        prefs.edit().putBoolean("auto_hide", enabled).apply()
         if (!enabled) {
             hideHandler.removeCallbacks(hideRunnable)
             if (!manuallyHidden) {
                 wifiIcon.visibility = android.view.View.VISIBLE
                 wifiText.visibility = android.view.View.VISIBLE
             }
+        } else {
+            // Включили галочку — запускаем отсчёт немедленно, а не ждём
+            // следующего движения ползунка позиции (как было раньше).
+            scheduleAutoHide()
         }
     }
 
@@ -404,6 +417,7 @@ class WifiOverlayService : Service() {
         val v = if (visible) android.view.View.VISIBLE else android.view.View.GONE
         wifiIcon.visibility = v
         wifiText.visibility = v
+        if (visible) scheduleAutoHide() else hideHandler.removeCallbacks(hideRunnable)
     }
 
     /** Синхронно убирает overlay и останавливает сервис. Безопасно вызывать

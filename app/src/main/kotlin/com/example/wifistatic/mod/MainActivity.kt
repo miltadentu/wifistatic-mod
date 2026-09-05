@@ -24,14 +24,13 @@ class MainActivity : AppCompatActivity() {
     private lateinit var sbY: SeekBar
     private lateinit var sbAlpha: SeekBar
     private lateinit var sbTextPosition: SeekBar
+    private lateinit var sbIconSize: SeekBar
     private lateinit var sbFontSize: SeekBar
     private lateinit var cbAutoHide: CheckBox
     private lateinit var tvTextPositionLabel: TextView
+    private lateinit var tvIconSizeLabel: TextView
     private lateinit var tvFontSizeLabel: TextView
     private lateinit var tvPermissionsStatus: TextView
-    private lateinit var btnSize20: Button
-    private lateinit var btnSize30: Button
-    private lateinit var btnSize40: Button
     private lateinit var btnMinimize: Button
     private lateinit var btnClose: Button
 
@@ -53,14 +52,13 @@ class MainActivity : AppCompatActivity() {
         sbY = findViewById(R.id.sbY)
         sbAlpha = findViewById(R.id.sbAlpha)
         sbTextPosition = findViewById(R.id.sbTextPosition)
+        sbIconSize = findViewById(R.id.sbIconSize)
         sbFontSize = findViewById(R.id.sbFontSize)
         cbAutoHide = findViewById(R.id.cbAutoHide)
         tvTextPositionLabel = findViewById(R.id.tvTextPositionLabel)
+        tvIconSizeLabel = findViewById(R.id.tvIconSizeLabel)
         tvFontSizeLabel = findViewById(R.id.tvFontSizeLabel)
         tvPermissionsStatus = findViewById(R.id.tvPermissionsStatus)
-        btnSize20 = findViewById(R.id.btnSize20)
-        btnSize30 = findViewById(R.id.btnSize30)
-        btnSize40 = findViewById(R.id.btnSize40)
         btnMinimize = findViewById(R.id.btnMinimize)
         btnClose = findViewById(R.id.btnClose)
     }
@@ -71,10 +69,12 @@ class MainActivity : AppCompatActivity() {
         sbY.progress = prefs.getInt("pos_y", 50)
         sbAlpha.progress = prefs.getInt("alpha", 200)
         sbTextPosition.progress = prefs.getInt("text_position", 0)
-        sbFontSize.progress = prefs.getInt("font_size", 100)
+        sbIconSize.progress = prefs.getInt("icon_size", 60)
+        sbFontSize.progress = prefs.getInt("text_size", 24)
         cbAutoHide.isChecked = prefs.getBoolean("auto_hide", false)
 
         updateTextPositionLabel()
+        updateIconSizeLabel()
         updateFontSizeLabel()
     }
 
@@ -127,12 +127,25 @@ class MainActivity : AppCompatActivity() {
             override fun onStopTrackingTouch(seekBar: SeekBar?) {}
         })
 
+        sbIconSize.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+            override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
+                if (fromUser) {
+                    updateIconSizeLabel()
+                    WifiOverlayService.getInstance()?.updateIconSize(progress)
+                    prefs.edit().putInt("icon_size", progress).apply()
+                }
+            }
+
+            override fun onStartTrackingTouch(seekBar: SeekBar?) {}
+            override fun onStopTrackingTouch(seekBar: SeekBar?) {}
+        })
+
         sbFontSize.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
                 if (fromUser) {
                     updateFontSizeLabel()
-                    WifiOverlayService.getInstance()?.updateFontSizeMultiplier(progress)
-                    prefs.edit().putInt("font_size", progress).apply()
+                    WifiOverlayService.getInstance()?.updateTextSize(progress)
+                    prefs.edit().putInt("text_size", progress).apply()
                 }
             }
 
@@ -143,24 +156,6 @@ class MainActivity : AppCompatActivity() {
         cbAutoHide.setOnCheckedChangeListener { _, isChecked ->
             WifiOverlayService.getInstance()?.updateAutoHideSetting(isChecked)
             prefs.edit().putBoolean("auto_hide", isChecked).apply()
-        }
-
-        btnSize20.setOnClickListener {
-            WifiOverlayService.getInstance()?.updateSize(20)
-            sbX.progress = 50
-            sbY.progress = 50
-        }
-
-        btnSize30.setOnClickListener {
-            WifiOverlayService.getInstance()?.updateSize(30)
-            sbX.progress = 50
-            sbY.progress = 50
-        }
-
-        btnSize40.setOnClickListener {
-            WifiOverlayService.getInstance()?.updateSize(40)
-            sbX.progress = 50
-            sbY.progress = 50
         }
 
         // Свернуть — просто закрывает окно настроек, оверлей продолжает работать.
@@ -180,8 +175,12 @@ class MainActivity : AppCompatActivity() {
         tvTextPositionLabel.text = if (sbTextPosition.progress == 0) "Справа" else "Снизу"
     }
 
+    private fun updateIconSizeLabel() {
+        tvIconSizeLabel.text = "${sbIconSize.progress}px"
+    }
+
     private fun updateFontSizeLabel() {
-        tvFontSizeLabel.text = "${sbFontSize.progress}%"
+        tvFontSizeLabel.text = "${sbFontSize.progress}sp"
     }
 
     // ---------------------------------------------------------------

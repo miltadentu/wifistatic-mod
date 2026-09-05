@@ -80,50 +80,44 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Размер шрифта (множитель)"
+            android:text="Размер иконки"
             android:textColor="#ff00ff00"
-            android:layout_marginTop="5dp" />
+            android:layout_marginTop="10dp" />
+
+        <SeekBar
+            android:id="@+id/sbIconSize"
+            android:layout_width="600dp"
+            android:layout_height="35dp"
+            android:max="200"
+            android:progress="60" />
+
+        <TextView
+            android:id="@+id/tvIconSizeLabel"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="60px"
+            android:textColor="#ff00ff00" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Размер текста (SSID)"
+            android:textColor="#ff00ff00"
+            android:layout_marginTop="10dp" />
 
         <SeekBar
             android:id="@+id/sbFontSize"
             android:layout_width="600dp"
             android:layout_height="35dp"
-            android:max="200"
-            android:progress="100" />
+            android:max="80"
+            android:progress="24" />
 
         <TextView
             android:id="@+id/tvFontSizeLabel"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="100%"
+            android:text="24sp"
             android:textColor="#ff00ff00" />
-
-        <LinearLayout
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:layout_marginTop="10dp">
-
-            <Button
-                android:id="@+id/btnSize20"
-                android:layout_width="80dp"
-                android:layout_height="wrap_content"
-                android:text="20" />
-
-            <Button
-                android:id="@+id/btnSize30"
-                android:layout_width="80dp"
-                android:layout_height="wrap_content"
-                android:text="30"
-                android:layout_marginHorizontal="10dp" />
-
-            <Button
-                android:id="@+id/btnSize40"
-                android:layout_width="80dp"
-                android:layout_height="wrap_content"
-                android:text="40" />
-
-        </LinearLayout>
 
         <TextView
             android:id="@+id/tvPermissionsStatus"
