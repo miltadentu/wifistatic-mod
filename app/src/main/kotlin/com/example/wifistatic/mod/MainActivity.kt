@@ -315,9 +315,17 @@ class MainActivity : AppCompatActivity() {
             // Разрешение на геолокацию могло появиться только что — заставляем
             // уже запущенный сервис попробовать прочитать SSID заново.
             WifiOverlayService.getInstance()?.refreshStatus()
+            // Пока экран настроек открыт — не даём иконке скрыться по таймеру.
+            WifiOverlayService.getInstance()?.setSettingsOpen(true)
         } catch (e: Exception) {
             e.printStackTrace()
         }
+    }
+
+    override fun onPause() {
+        super.onPause()
+        // Экран настроек больше не на переднем плане — авто-скрытие снова активно.
+        WifiOverlayService.getInstance()?.setSettingsOpen(false)
     }
 
     // Специально НЕ останавливаем сервис в onDestroy — оверлей должен жить

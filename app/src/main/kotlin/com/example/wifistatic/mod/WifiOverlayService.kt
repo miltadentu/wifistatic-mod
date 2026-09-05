@@ -10,7 +10,9 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.content.SharedPreferences
 import android.net.ConnectivityManager
+import android.net.Network
 import android.net.NetworkCapabilities
+import android.net.NetworkRequest
 import android.os.Build
 import android.os.Handler
 import android.os.IBinder
@@ -40,7 +42,9 @@ class WifiOverlayService : Service() {
     private var currentSSID = ""
     private var overlayAdded = false
     private var manuallyHidden = false
+    private var settingsOpen = false
     private var currentStatus = WifiStatus.UNKNOWN
+    private var networkCallback: ConnectivityManager.NetworkCallback? = null
 
     companion object {
         const val CHANNEL_ID = "wifi_service_channel"
@@ -214,14 +218,58 @@ class WifiOverlayService : Service() {
      *  раньше — из-за чего таймер часто вообще не запускался). */
     private fun scheduleAutoHide() {
         hideHandler.removeCallbacks(hideRunnable)
-        if (isAutoHideEnabled && !manuallyHidden) {
+        if (isAutoHideEnabled && !manuallyHidden && !settingsOpen) {
             hideHandler.postDelayed(hideRunnable, 15000)
+        }
+    }
+
+    /** Вызывается из MainActivity: пока экран настроек открыт (на переднем
+     *  плане), таймер авто-скрытия приостановлен — удобнее подбирать
+     *  позицию/размер, не отвлекаясь на пропадающую иконку. */
+    fun setSettingsOpen(open: Boolean) {
+        settingsOpen = open
+        if (open) {
+            hideHandler.removeCallbacks(hideRunnable)
+            if (!manuallyHidden) {
+                wifiIcon.visibility = android.view.View.VISIBLE
+                wifiText.visibility = android.view.View.VISIBLE
+            }
+        } else {
+            scheduleAutoHide()
         }
     }
 
     private fun startNetworkMonitoring() {
         val cm = getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
         val wm = getSystemService(Context.WIFI_SERVICE) as WifiManager
+
+        // Старые sticky-broadcast'ы ловят момент ПОДКЛЮЧЕНИЯ, но не момент,
+        // когда Android через пару секунд ЗАВЕРШАЕТ фоновую проверку
+        // интернета на уже подключённой сети (NET_CAPABILITY_VALIDATED)
+        // — из-за этого иконка застревала жёлтой навсегда. NetworkCallback
+        // ловит именно это изменение через onCapabilitiesChanged.
+        try {
+            val request = NetworkRequest.Builder()
+                .addTransportType(NetworkCapabilities.TRANSPORT_WIFI)
+                .build()
+            val callback = object : ConnectivityManager.NetworkCallback() {
+                override fun onAvailable(network: Network) {
+                    checkCurrentStatus()
+                    updateWifiInfo(wm)
+                }
+                override fun onLost(network: Network) {
+                    checkCurrentStatus()
+                }
+                override fun onCapabilitiesChanged(network: Network, caps: NetworkCapabilities) {
+                    checkCurrentStatus()
+                    updateWifiInfo(wm)
+                }
+            }
+            networkCallback = callback
+            cm.registerNetworkCallback(request, callback)
+        } catch (e: Exception) {
+            android.util.Log.e("WifiOverlayMod", "registerNetworkCallback failed", e)
+        }
 
         val broadcastReceiver = object : BroadcastReceiver() {
             override fun onReceive(context: Context?, intent: Intent?) {
@@ -452,6 +500,13 @@ class WifiOverlayService : Service() {
             if (overlayAdded) {
                 windowManager.removeView(container)
                 overlayAdded = false
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+        try {
+            networkCallback?.let {
+                (getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager).unregisterNetworkCallback(it)
             }
         } catch (e: Exception) {
             e.printStackTrace()
