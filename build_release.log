@@ -40,10 +40,9 @@ Recommendation: remove package="com.example.wifistatic.mod" from the source Andr
 The AGP Upgrade Assistant can remove the attribute from the AndroidManifest.xml file and update the build file accordingly. See https://d.android.com/studio/build/agp-upgrade-assistant for more information.
 
 > Task :app:processReleaseManifest
-> Task :app:parseReleaseLocalResources
 > Task :app:javaPreCompileRelease
 > Task :app:desugarReleaseFileDependencies
-> Task :app:processReleaseManifestForPackage
+> Task :app:parseReleaseLocalResources
 > Task :app:mergeReleaseResources
 > Task :app:mergeReleaseArtProfile
 > Task :app:mergeReleaseShaders
@@ -54,13 +53,14 @@ The AGP Upgrade Assistant can remove the attribute from the AndroidManifest.xml 
 > Task :app:collectReleaseDependencies
 > Task :app:sdkReleaseDependencyData
 > Task :app:writeReleaseAppMetadata
+> Task :app:processReleaseManifestForPackage
 > Task :app:writeReleaseSigningConfigVersions
 > Task :app:processReleaseResources
 > Task :app:optimizeReleaseResources
 > Task :app:mergeExtDexRelease
 
 > Task :app:compileReleaseKotlin
-w: file:///home/runner/work/wifistatic-mod/wifistatic-mod/app/src/main/kotlin/com/example/wifistatic/mod/MainActivity.kt:266:54 'LOCATION_MODE: String' is deprecated. Deprecated in Java
+w: file:///home/runner/work/wifistatic-mod/wifistatic-mod/app/src/main/kotlin/com/example/wifistatic/mod/MainActivity.kt:287:54 'LOCATION_MODE: String' is deprecated. Deprecated in Java
 w: file:///home/runner/work/wifistatic-mod/wifistatic-mod/app/src/main/kotlin/com/example/wifistatic/mod/WifiOverlayService.kt:282:43 'CONNECTIVITY_ACTION: String' is deprecated. Deprecated in Java
 w: file:///home/runner/work/wifistatic-mod/wifistatic-mod/app/src/main/kotlin/com/example/wifistatic/mod/WifiOverlayService.kt:284:35 'SUPPLICANT_STATE_CHANGED_ACTION: String' is deprecated. Deprecated in Java
 w: file:///home/runner/work/wifistatic-mod/wifistatic-mod/app/src/main/kotlin/com/example/wifistatic/mod/WifiOverlayService.kt:325:37 'getter for connectionInfo: WifiInfo!' is deprecated. Deprecated in Java
