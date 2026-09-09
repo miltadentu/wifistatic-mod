@@ -253,6 +253,30 @@ class MainActivity : AppCompatActivity() {
             return
         }
 
+        // 3.5. "Разрешать всегда" для геолокации — без него SSID виден
+        // только пока сам экран настроек открыт (foreground activity),
+        // а из фонового сервиса Android скрывает имя сети. На Android 11+
+        // это разрешение НЕЛЬЗЯ запросить обычным диалогом — только через
+        // экран настроек, где теперь должен появиться пункт "Разрешать
+        // всегда" (так как оно объявлено в манифесте).
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q &&
+            ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_BACKGROUND_LOCATION)
+            != PackageManager.PERMISSION_GRANTED
+        ) {
+            updatePermissionsStatus()
+            try {
+                startActivity(
+                    Intent(
+                        Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                        Uri.parse("package:$packageName")
+                    )
+                )
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+            return
+        }
+
         // 4. Исключение из оптимизации батареи — чтобы система не убивала сервис.
         val pm = getSystemService(Context.POWER_SERVICE) as PowerManager
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !pm.isIgnoringBatteryOptimizations(packageName)) {
@@ -298,11 +322,14 @@ class MainActivity : AppCompatActivity() {
         val locPermOk = ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) ==
                 PackageManager.PERMISSION_GRANTED
         val locServiceOk = isLocationServiceEnabled()
+        val bgLocOk = Build.VERSION.SDK_INT < Build.VERSION_CODES.Q ||
+                ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_BACKGROUND_LOCATION) ==
+                        PackageManager.PERMISSION_GRANTED
         val batteryOk = Build.VERSION.SDK_INT < Build.VERSION_CODES.M ||
                 (getSystemService(Context.POWER_SERVICE) as PowerManager).isIgnoringBatteryOptimizations(packageName)
 
         fun mark(ok: Boolean) = if (ok) "\u2713" else "\u2717"
-        tvPermissionsStatus.text = "Overlay ${mark(overlayOk)}  Геолокация: разрешение ${mark(locPermOk)}, тумблер ${mark(locServiceOk)}  Батарея ${mark(batteryOk)}"
+        tvPermissionsStatus.text = "Overlay ${mark(overlayOk)}  Геолокация: разрешение ${mark(locPermOk)}, тумблер ${mark(locServiceOk)}, \"всегда\" ${mark(bgLocOk)}  Батарея ${mark(batteryOk)}"
     }
 
     private fun startWifiService() {

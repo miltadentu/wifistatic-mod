@@ -40,6 +40,7 @@ class WifiOverlayService : Service() {
     private lateinit var hideRunnable: Runnable
     private var isAutoHideEnabled = false
     private var currentSSID = ""
+    private var currentSignalPercent = -1
     private var overlayAdded = false
     private var manuallyHidden = false
     private var settingsOpen = false
@@ -337,6 +338,15 @@ class WifiOverlayService : Service() {
                 } else {
                     android.util.Log.w("WifiOverlayMod", "SSID unavailable (raw='$rawSsid') — permission/location toggle likely missing")
                 }
+
+                try {
+                    val rssi = connectionInfo.rssi
+                    val level = WifiManager.calculateSignalLevel(rssi, 5) // 0..4
+                    currentSignalPercent = (level * 100 / 4).coerceIn(0, 100)
+                } catch (e: Exception) {
+                    currentSignalPercent = -1
+                }
+
                 updateTextDisplay()
             }
         } catch (e: Exception) {
@@ -346,8 +356,10 @@ class WifiOverlayService : Service() {
 
     private fun updateTextDisplay() {
         wifiText.text = when (currentStatus) {
-            WifiStatus.CONNECTED, WifiStatus.LIMITED ->
-                if (currentSSID.isNotBlank()) currentSSID else "WiFi"
+            WifiStatus.CONNECTED, WifiStatus.LIMITED -> {
+                val name = if (currentSSID.isNotBlank()) currentSSID else "WiFi"
+                if (currentSignalPercent >= 0) "$name  $currentSignalPercent%" else name
+            }
             WifiStatus.DISCONNECTED -> "No WiFi"
             WifiStatus.UNKNOWN -> "WiFi"
         }
