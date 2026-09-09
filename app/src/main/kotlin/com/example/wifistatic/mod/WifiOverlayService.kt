@@ -323,18 +323,24 @@ class WifiOverlayService : Service() {
     private fun updateWifiInfo(wm: WifiManager) {
         try {
             val connectionInfo = wm.connectionInfo
-            if (connectionInfo != null && connectionInfo.ssid != null) {
-                var ssid = connectionInfo.ssid
-                if (ssid.startsWith("\"") && ssid.endsWith("\"")) {
+            val rawSsid = connectionInfo?.ssid
+            if (rawSsid != null) {
+                var ssid = rawSsid.trim()
+                if (ssid.startsWith("\"") && ssid.endsWith("\"") && ssid.length >= 2) {
                     ssid = ssid.substring(1, ssid.length - 1)
                 }
-                if (ssid != "<unknown ssid>") {
+                if (ssid.isNotBlank() && !ssid.equals("<unknown ssid>", ignoreCase = true) && ssid != "0x") {
+                    if (ssid != currentSSID) {
+                        android.util.Log.i("WifiOverlayMod", "SSID resolved: $ssid")
+                    }
                     currentSSID = ssid
+                } else {
+                    android.util.Log.w("WifiOverlayMod", "SSID unavailable (raw='$rawSsid') — permission/location toggle likely missing")
                 }
                 updateTextDisplay()
             }
         } catch (e: Exception) {
-            e.printStackTrace()
+            android.util.Log.e("WifiOverlayMod", "updateWifiInfo failed", e)
         }
     }
 

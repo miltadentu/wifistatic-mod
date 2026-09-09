@@ -214,9 +214,30 @@ class MainActivity : AppCompatActivity() {
             != PackageManager.PERMISSION_GRANTED
         ) {
             updatePermissionsStatus()
-            ActivityCompat.requestPermissions(
-                this, arrayOf(Manifest.permission.ACCESS_FINE_LOCATION), REQ_LOCATION_PERM
-            )
+            val prefs = getSharedPreferences("wifi_prefs", Context.MODE_PRIVATE)
+            val askedBefore = prefs.getBoolean("asked_location_perm", false)
+            val canShowDialog = !askedBefore ||
+                ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.ACCESS_FINE_LOCATION)
+            if (canShowDialog) {
+                prefs.edit().putBoolean("asked_location_perm", true).apply()
+                ActivityCompat.requestPermissions(
+                    this, arrayOf(Manifest.permission.ACCESS_FINE_LOCATION), REQ_LOCATION_PERM
+                )
+            } else {
+                // Диалог больше не покажется (уже отклоняли раньше) —
+                // единственный путь дать разрешение теперь — вручную,
+                // через экран "Информация о приложении".
+                try {
+                    startActivity(
+                        Intent(
+                            Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                            Uri.parse("package:$packageName")
+                        )
+                    )
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+            }
             return
         }
 
@@ -281,7 +302,7 @@ class MainActivity : AppCompatActivity() {
                 (getSystemService(Context.POWER_SERVICE) as PowerManager).isIgnoringBatteryOptimizations(packageName)
 
         fun mark(ok: Boolean) = if (ok) "\u2713" else "\u2717"
-        tvPermissionsStatus.text = "Overlay ${mark(overlayOk)}  Геолокация ${mark(locPermOk && locServiceOk)}  Батарея ${mark(batteryOk)}"
+        tvPermissionsStatus.text = "Overlay ${mark(overlayOk)}  Геолокация: разрешение ${mark(locPermOk)}, тумблер ${mark(locServiceOk)}  Батарея ${mark(batteryOk)}"
     }
 
     private fun startWifiService() {
