@@ -11,8 +11,8 @@ android {
         applicationId = "com.example.wifistatic.mod"
         minSdk = 21
         targetSdk = 29
-        versionCode = 13
-        versionName = "3.5"
+        versionCode = 14
+        versionName = "3.6"
     }
 
     buildTypes {

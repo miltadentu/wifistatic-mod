@@ -7,13 +7,14 @@ import android.os.Build
 
 class BootReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context?, intent: Intent?) {
-        if (intent?.action == Intent.ACTION_BOOT_COMPLETED) {
+        if (intent?.action == Intent.ACTION_BOOT_COMPLETED && context != null) {
             val serviceIntent = Intent(context, WifiOverlayService::class.java)
-            if (context != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 context.startForegroundService(serviceIntent)
             } else {
-                context?.startService(serviceIntent)
+                context.startService(serviceIntent)
             }
+            WatchdogReceiver.schedule(context)
         }
     }
 }

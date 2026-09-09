@@ -165,6 +165,7 @@ class MainActivity : AppCompatActivity() {
 
         // Закрыть — полностью останавливает оверлей и сервис.
         btnClose.setOnClickListener {
+            WatchdogReceiver.cancel(this)
             WifiOverlayService.getInstance()?.stopOverlay()
             stopService(Intent(this, WifiOverlayService::class.java))
             finish()
@@ -208,6 +209,9 @@ class MainActivity : AppCompatActivity() {
         if (WifiOverlayService.getInstance() == null) {
             startWifiService()
         }
+        // Внешний будильник переживёт даже полное убийство процесса —
+        // на некоторых прошивках стандартный START_STICKY не срабатывает.
+        WatchdogReceiver.schedule(this)
 
         // 2. Разрешение на геолокацию — без него Android не отдаёт SSID сети.
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)

@@ -92,6 +92,7 @@ class WifiOverlayService : Service() {
             setupOverlay()
             startNetworkMonitoring()
             checkCurrentStatus()
+            startPeriodicSelfCheck()
         } catch (t: Throwable) {
             android.util.Log.e("WifiOverlayMod", "Fatal error in onCreate", t)
             stopSelf()
@@ -297,6 +298,25 @@ class WifiOverlayService : Service() {
      *  что теперь можно попробовать прочитать SSID ещё раз. */
     fun refreshStatus() {
         checkCurrentStatus()
+    }
+
+    /** Подстраховка на случай, если NetworkCallback/BroadcastReceiver по
+     *  какой-то причине перестанут доставлять события (замечено на
+     *  некоторых кастомных прошивках) — раз в минуту дополнительно
+     *  перепроверяем статус вручную. */
+    private fun startPeriodicSelfCheck() {
+        val selfCheckHandler = Handler(Looper.getMainLooper())
+        val selfCheckRunnable = object : Runnable {
+            override fun run() {
+                try {
+                    checkCurrentStatus()
+                } catch (e: Exception) {
+                    android.util.Log.e("WifiOverlayMod", "Periodic self-check failed", e)
+                }
+                selfCheckHandler.postDelayed(this, 60_000)
+            }
+        }
+        selfCheckHandler.postDelayed(selfCheckRunnable, 60_000)
     }
 
     private fun checkCurrentStatus() {
