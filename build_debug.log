@@ -73,7 +73,7 @@ The AGP Upgrade Assistant can remove the attribute from the AndroidManifest.xml 
 > Task :app:writeDebugSigningConfigVersions
 
 > Task :app:compileDebugKotlin
-w: file:///home/runner/work/wifistatic-mod/wifistatic-mod/app/src/main/kotlin/com/example/wifistatic/mod/MainActivity.kt:266:54 'LOCATION_MODE: String' is deprecated. Deprecated in Java
+w: file:///home/runner/work/wifistatic-mod/wifistatic-mod/app/src/main/kotlin/com/example/wifistatic/mod/MainActivity.kt:287:54 'LOCATION_MODE: String' is deprecated. Deprecated in Java
 w: file:///home/runner/work/wifistatic-mod/wifistatic-mod/app/src/main/kotlin/com/example/wifistatic/mod/WifiOverlayService.kt:282:43 'CONNECTIVITY_ACTION: String' is deprecated. Deprecated in Java
 w: file:///home/runner/work/wifistatic-mod/wifistatic-mod/app/src/main/kotlin/com/example/wifistatic/mod/WifiOverlayService.kt:284:35 'SUPPLICANT_STATE_CHANGED_ACTION: String' is deprecated. Deprecated in Java
 w: file:///home/runner/work/wifistatic-mod/wifistatic-mod/app/src/main/kotlin/com/example/wifistatic/mod/WifiOverlayService.kt:325:37 'getter for connectionInfo: WifiInfo!' is deprecated. Deprecated in Java
@@ -90,5 +90,5 @@ PackagingOptions.jniLibs.useLegacyPackaging should be set to false because andro
 > Task :app:createDebugApkListingFileRedirect
 > Task :app:assembleDebug
 
-BUILD SUCCESSFUL in 1m 48s
+BUILD SUCCESSFUL in 1m 51s
 31 actionable tasks: 31 executed
