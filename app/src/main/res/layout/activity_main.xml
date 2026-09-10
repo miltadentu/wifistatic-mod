@@ -60,6 +60,27 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:text="Время показа по ADB-команде (сек)"
+            android:textColor="#ff00ff00"
+            android:layout_marginTop="10dp" />
+
+        <SeekBar
+            android:id="@+id/sbShowDuration"
+            android:layout_width="600dp"
+            android:layout_height="35dp"
+            android:max="60"
+            android:progress="5" />
+
+        <TextView
+            android:id="@+id/tvShowDurationLabel"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="5 сек"
+            android:textColor="#ff00ff00" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
             android:text="Позиция текста WiFi"
             android:textColor="#ff00ff00"
             android:layout_marginTop="10dp" />

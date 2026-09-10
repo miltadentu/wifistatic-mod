@@ -27,6 +27,8 @@ class MainActivity : AppCompatActivity() {
     private lateinit var sbIconSize: SeekBar
     private lateinit var sbFontSize: SeekBar
     private lateinit var cbAutoHide: CheckBox
+    private lateinit var sbShowDuration: SeekBar
+    private lateinit var tvShowDurationLabel: TextView
     private lateinit var tvTextPositionLabel: TextView
     private lateinit var tvIconSizeLabel: TextView
     private lateinit var tvFontSizeLabel: TextView
@@ -55,6 +57,8 @@ class MainActivity : AppCompatActivity() {
         sbIconSize = findViewById(R.id.sbIconSize)
         sbFontSize = findViewById(R.id.sbFontSize)
         cbAutoHide = findViewById(R.id.cbAutoHide)
+        sbShowDuration = findViewById(R.id.sbShowDuration)
+        tvShowDurationLabel = findViewById(R.id.tvShowDurationLabel)
         tvTextPositionLabel = findViewById(R.id.tvTextPositionLabel)
         tvIconSizeLabel = findViewById(R.id.tvIconSizeLabel)
         tvFontSizeLabel = findViewById(R.id.tvFontSizeLabel)
@@ -72,10 +76,12 @@ class MainActivity : AppCompatActivity() {
         sbIconSize.progress = prefs.getInt("icon_size", 60)
         sbFontSize.progress = prefs.getInt("text_size", 24)
         cbAutoHide.isChecked = prefs.getBoolean("auto_hide", false)
+        sbShowDuration.progress = prefs.getInt("show_duration_sec", 5)
 
         updateTextPositionLabel()
         updateIconSizeLabel()
         updateFontSizeLabel()
+        updateShowDurationLabel()
     }
 
     private fun setupListeners() {
@@ -158,6 +164,18 @@ class MainActivity : AppCompatActivity() {
             prefs.edit().putBoolean("auto_hide", isChecked).apply()
         }
 
+        sbShowDuration.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+            override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
+                if (fromUser) {
+                    updateShowDurationLabel()
+                    prefs.edit().putInt("show_duration_sec", progress.coerceAtLeast(1)).apply()
+                }
+            }
+
+            override fun onStartTrackingTouch(seekBar: SeekBar?) {}
+            override fun onStopTrackingTouch(seekBar: SeekBar?) {}
+        })
+
         // Свернуть — просто закрывает окно настроек, оверлей продолжает работать.
         btnMinimize.setOnClickListener {
             finish()
@@ -182,6 +200,10 @@ class MainActivity : AppCompatActivity() {
 
     private fun updateFontSizeLabel() {
         tvFontSizeLabel.text = "${sbFontSize.progress}sp"
+    }
+
+    private fun updateShowDurationLabel() {
+        tvShowDurationLabel.text = "${sbShowDuration.progress.coerceAtLeast(1)} сек"
     }
 
     // ---------------------------------------------------------------

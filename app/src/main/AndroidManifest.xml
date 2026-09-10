@@ -19,6 +19,7 @@
     <application
         android:name=".WifiApp"
         android:allowBackup="true"
+        android:banner="@drawable/tv_banner"
         android:extractNativeLibs="false"
         android:icon="@mipmap/ic_launcher"
         android:label="WiFi Monitor TV MOD"

@@ -58,6 +58,11 @@ class WifiOverlayService : Service() {
         const val ACTION_HIDE = "com.example.wifistatic.mod.ACTION_HIDE"
         const val ACTION_TOGGLE = "com.example.wifistatic.mod.ACTION_TOGGLE"
         const val ACTION_STOP = "com.example.wifistatic.mod.ACTION_STOP"
+        // Показать на N секунд и снова спрятать. Если extra "seconds" не
+        // передан — берётся значение из настроек (show_duration_sec):
+        //   su 0 sh -c "am start-foreground-service -n com.example.wifistatic.mod/.WifiOverlayService -a com.example.wifistatic.mod.ACTION_SHOW_FOR --ei seconds 10"
+        const val ACTION_SHOW_FOR = "com.example.wifistatic.mod.ACTION_SHOW_FOR"
+        const val EXTRA_SECONDS = "seconds"
 
         private var instance: WifiOverlayService? = null
 
@@ -520,8 +525,24 @@ class WifiOverlayService : Service() {
             ACTION_HIDE -> setOverlayVisible(false)
             ACTION_TOGGLE -> setOverlayVisible(!isOverlayCurrentlyVisible())
             ACTION_STOP -> stopOverlay()
+            ACTION_SHOW_FOR -> {
+                val requested = intent.getIntExtra(EXTRA_SECONDS, -1)
+                val seconds = if (requested > 0) requested else prefs.getInt("show_duration_sec", 5)
+                showTemporarily(seconds)
+            }
         }
         return START_STICKY
+    }
+
+    /** Показать оверлей ровно на N секунд и снова спрятать — независимо от
+     *  настройки "авто-скрытие" (это отдельная, явная команда "мигнуть"). */
+    private fun showTemporarily(seconds: Int) {
+        if (!overlayAdded) return
+        manuallyHidden = false
+        wifiIcon.visibility = android.view.View.VISIBLE
+        wifiText.visibility = android.view.View.VISIBLE
+        hideHandler.removeCallbacks(hideRunnable)
+        hideHandler.postDelayed(hideRunnable, (seconds.coerceAtLeast(1)) * 1000L)
     }
 
     private fun isOverlayCurrentlyVisible(): Boolean {
