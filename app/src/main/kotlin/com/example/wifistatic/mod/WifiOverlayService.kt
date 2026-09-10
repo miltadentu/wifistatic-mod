@@ -46,6 +46,7 @@ class WifiOverlayService : Service() {
     private var settingsOpen = false
     private var currentStatus = WifiStatus.UNKNOWN
     private var networkCallback: ConnectivityManager.NetworkCallback? = null
+    private val mainHandler: Handler by lazy { Handler(Looper.getMainLooper()) }
 
     companion object {
         const val CHANNEL_ID = "wifi_service_channel"
@@ -250,25 +251,55 @@ class WifiOverlayService : Service() {
         // интернета на уже подключённой сети (NET_CAPABILITY_VALIDATED)
         // — из-за этого иконка застревала жёлтой навсегда. NetworkCallback
         // ловит именно это изменение через onCapabilitiesChanged.
+        //
+        // ВАЖНО: колбэки NetworkCallback выполняются НЕ в главном потоке
+        // (на служебном потоке системы), а внутри них меняется UI (иконка,
+        // текст) — прямой вызов отсюда кидает CalledFromWrongThreadException
+        // и мгновенно роняет процесс. Поэтому вся работа явно переносится
+        // на главный поток через mainHandler.post{}.
         try {
             val request = NetworkRequest.Builder()
                 .addTransportType(NetworkCapabilities.TRANSPORT_WIFI)
                 .build()
             val callback = object : ConnectivityManager.NetworkCallback() {
                 override fun onAvailable(network: Network) {
-                    checkCurrentStatus()
-                    updateWifiInfo(wm)
+                    mainHandler.post {
+                        try {
+                            checkCurrentStatus()
+                            updateWifiInfo(wm)
+                        } catch (e: Exception) {
+                            android.util.Log.e("WifiOverlayMod", "onAvailable handling failed", e)
+                        }
+                    }
                 }
                 override fun onLost(network: Network) {
-                    checkCurrentStatus()
+                    mainHandler.post {
+                        try {
+                            checkCurrentStatus()
+                        } catch (e: Exception) {
+                            android.util.Log.e("WifiOverlayMod", "onLost handling failed", e)
+                        }
+                    }
                 }
                 override fun onCapabilitiesChanged(network: Network, caps: NetworkCapabilities) {
-                    checkCurrentStatus()
-                    updateWifiInfo(wm)
+                    mainHandler.post {
+                        try {
+                            checkCurrentStatus()
+                            updateWifiInfo(wm)
+                        } catch (e: Exception) {
+                            android.util.Log.e("WifiOverlayMod", "onCapabilitiesChanged handling failed", e)
+                        }
+                    }
                 }
             }
             networkCallback = callback
-            cm.registerNetworkCallback(request, callback)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                // Дополнительная подстраховка на API26+: явно указываем главный
+                // Handler и самой системе, а не полагаемся только на наш post{}.
+                cm.registerNetworkCallback(request, callback, mainHandler)
+            } else {
+                cm.registerNetworkCallback(request, callback)
+            }
         } catch (e: Exception) {
             android.util.Log.e("WifiOverlayMod", "registerNetworkCallback failed", e)
         }
