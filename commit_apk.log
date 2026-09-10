@@ -1,4 +1,4 @@
 API MESSAGE for POST https://api.github.com/repos/miltadentu/wifistatic-mod/git/refs: Reference already exists | 
-Uploaded blob for debug: d29d6425bdc4359997e1c09a9b1aabb2003fe31d
-Uploaded blob for release: 3bd391c2a40ac9073f006faa0756bb393042cd3e
+Uploaded blob for debug: bda94436784da7c621c20c338a7dc6e8ef20ae1c
+Uploaded blob for release: 9e78f4656055535fecf004520aa58f895a9d613b
 Branch updated: refs/heads/ci-apk
