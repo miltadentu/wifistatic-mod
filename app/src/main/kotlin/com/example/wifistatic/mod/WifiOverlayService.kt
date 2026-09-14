@@ -326,6 +326,27 @@ class WifiOverlayService : Service() {
         } else {
             registerReceiver(broadcastReceiver, filter)
         }
+
+        // ACTION_SCREEN_ON принципиально нельзя объявить статически в
+        // манифесте (Android игнорирует такую подписку для этого события) —
+        // регистрируем динамически, пока сервис жив. Срабатывает при выходе
+        // TV из спящего режима/ожидания.
+        try {
+            val screenReceiver = object : BroadcastReceiver() {
+                override fun onReceive(context: Context?, intent: Intent?) {
+                    if (intent?.action == Intent.ACTION_SCREEN_ON) {
+                        val showOnWake = prefs.getBoolean("show_on_wake", false)
+                        if (showOnWake) {
+                            val seconds = prefs.getInt("show_duration_sec", 5)
+                            showTemporarily(seconds)
+                        }
+                    }
+                }
+            }
+            registerReceiver(screenReceiver, IntentFilter(Intent.ACTION_SCREEN_ON))
+        } catch (e: Exception) {
+            android.util.Log.e("WifiOverlayMod", "Screen-on receiver registration failed", e)
+        }
     }
 
     /** Вызывается извне (из MainActivity) после того как пользователь мог

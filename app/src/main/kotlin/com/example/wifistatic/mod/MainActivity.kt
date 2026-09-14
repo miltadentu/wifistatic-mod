@@ -29,6 +29,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var cbAutoHide: CheckBox
     private lateinit var sbShowDuration: SeekBar
     private lateinit var tvShowDurationLabel: TextView
+    private lateinit var cbShowOnWake: CheckBox
     private lateinit var tvTextPositionLabel: TextView
     private lateinit var tvIconSizeLabel: TextView
     private lateinit var tvFontSizeLabel: TextView
@@ -59,6 +60,7 @@ class MainActivity : AppCompatActivity() {
         cbAutoHide = findViewById(R.id.cbAutoHide)
         sbShowDuration = findViewById(R.id.sbShowDuration)
         tvShowDurationLabel = findViewById(R.id.tvShowDurationLabel)
+        cbShowOnWake = findViewById(R.id.cbShowOnWake)
         tvTextPositionLabel = findViewById(R.id.tvTextPositionLabel)
         tvIconSizeLabel = findViewById(R.id.tvIconSizeLabel)
         tvFontSizeLabel = findViewById(R.id.tvFontSizeLabel)
@@ -77,6 +79,7 @@ class MainActivity : AppCompatActivity() {
         sbFontSize.progress = prefs.getInt("text_size", 24)
         cbAutoHide.isChecked = prefs.getBoolean("auto_hide", false)
         sbShowDuration.progress = prefs.getInt("show_duration_sec", 5)
+        cbShowOnWake.isChecked = prefs.getBoolean("show_on_wake", false)
 
         updateTextPositionLabel()
         updateIconSizeLabel()
@@ -175,6 +178,10 @@ class MainActivity : AppCompatActivity() {
             override fun onStartTrackingTouch(seekBar: SeekBar?) {}
             override fun onStopTrackingTouch(seekBar: SeekBar?) {}
         })
+
+        cbShowOnWake.setOnCheckedChangeListener { _, isChecked ->
+            prefs.edit().putBoolean("show_on_wake", isChecked).apply()
+        }
 
         // Свернуть — просто закрывает окно настроек, оверлей продолжает работать.
         btnMinimize.setOnClickListener {

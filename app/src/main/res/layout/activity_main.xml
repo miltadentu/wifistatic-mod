@@ -78,6 +78,15 @@
             android:text="5 сек"
             android:textColor="#ff00ff00" />
 
+        <CheckBox
+            android:id="@+id/cbShowOnWake"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Показывать при пробуждении/включении TV"
+            android:textSize="16sp"
+            android:textColor="#ff00ff00"
+            android:layout_marginTop="5dp" />
+
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
