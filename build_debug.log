@@ -55,35 +55,35 @@ The AGP Upgrade Assistant can remove the attribute from the AndroidManifest.xml 
 > Task :app:processDebugManifest
 > Task :app:javaPreCompileDebug
 > Task :app:mergeDebugShaders
-> Task :app:processDebugManifestForPackage
 > Task :app:compileDebugShaders NO-SOURCE
 > Task :app:generateDebugAssets UP-TO-DATE
 > Task :app:mergeDebugAssets
 > Task :app:compressDebugAssets
 > Task :app:checkDebugDuplicateClasses
-> Task :app:processDebugResources
 > Task :app:desugarDebugFileDependencies
-
-> Task :app:compileDebugKotlin
-w: file:///home/runner/work/wifistatic-mod/wifistatic-mod/app/src/main/kotlin/com/example/wifistatic/mod/MainActivity.kt:337:54 'LOCATION_MODE: String' is deprecated. Deprecated in Java
-w: file:///home/runner/work/wifistatic-mod/wifistatic-mod/app/src/main/kotlin/com/example/wifistatic/mod/WifiOverlayService.kt:320:43 'CONNECTIVITY_ACTION: String' is deprecated. Deprecated in Java
-w: file:///home/runner/work/wifistatic-mod/wifistatic-mod/app/src/main/kotlin/com/example/wifistatic/mod/WifiOverlayService.kt:322:35 'SUPPLICANT_STATE_CHANGED_ACTION: String' is deprecated. Deprecated in Java
-w: file:///home/runner/work/wifistatic-mod/wifistatic-mod/app/src/main/kotlin/com/example/wifistatic/mod/WifiOverlayService.kt:382:37 'getter for connectionInfo: WifiInfo!' is deprecated. Deprecated in Java
-w: file:///home/runner/work/wifistatic-mod/wifistatic-mod/app/src/main/kotlin/com/example/wifistatic/mod/WifiOverlayService.kt:400:45 'calculateSignalLevel(Int, Int): Int' is deprecated. Deprecated in Java
-
-> Task :app:mergeExtDexDebug
-> Task :app:compileDebugJavaWithJavac NO-SOURCE
-> Task :app:processDebugJavaRes
+> Task :app:processDebugManifestForPackage
 > Task :app:mergeLibDexDebug
-> Task :app:mergeDebugJavaResource
-> Task :app:dexBuilderDebug
 > Task :app:mergeDebugJniLibFolders
 > Task :app:mergeDebugNativeLibs NO-SOURCE
 > Task :app:stripDebugDebugSymbols NO-SOURCE
-> Task :app:mergeProjectDexDebug
 > Task :app:validateSigningDebug
 > Task :app:writeDebugAppMetadata
 > Task :app:writeDebugSigningConfigVersions
+> Task :app:processDebugResources
+> Task :app:mergeExtDexDebug
+
+> Task :app:compileDebugKotlin
+w: file:///home/runner/work/wifistatic-mod/wifistatic-mod/app/src/main/kotlin/com/example/wifistatic/mod/MainActivity.kt:344:54 'LOCATION_MODE: String' is deprecated. Deprecated in Java
+w: file:///home/runner/work/wifistatic-mod/wifistatic-mod/app/src/main/kotlin/com/example/wifistatic/mod/WifiOverlayService.kt:320:43 'CONNECTIVITY_ACTION: String' is deprecated. Deprecated in Java
+w: file:///home/runner/work/wifistatic-mod/wifistatic-mod/app/src/main/kotlin/com/example/wifistatic/mod/WifiOverlayService.kt:322:35 'SUPPLICANT_STATE_CHANGED_ACTION: String' is deprecated. Deprecated in Java
+w: file:///home/runner/work/wifistatic-mod/wifistatic-mod/app/src/main/kotlin/com/example/wifistatic/mod/WifiOverlayService.kt:403:37 'getter for connectionInfo: WifiInfo!' is deprecated. Deprecated in Java
+w: file:///home/runner/work/wifistatic-mod/wifistatic-mod/app/src/main/kotlin/com/example/wifistatic/mod/WifiOverlayService.kt:421:45 'calculateSignalLevel(Int, Int): Int' is deprecated. Deprecated in Java
+
+> Task :app:compileDebugJavaWithJavac NO-SOURCE
+> Task :app:processDebugJavaRes
+> Task :app:mergeDebugJavaResource
+> Task :app:dexBuilderDebug
+> Task :app:mergeProjectDexDebug
 
 > Task :app:packageDebug
 PackagingOptions.jniLibs.useLegacyPackaging should be set to false because android:extractNativeLibs is set to "false" in AndroidManifest.xml. Avoid setting android:extractNativeLibs="false" explicitly in AndroidManifest.xml, and instead set android.packagingOptions.jniLibs.useLegacyPackaging to false in the build.gradle file.
@@ -91,5 +91,5 @@ PackagingOptions.jniLibs.useLegacyPackaging should be set to false because andro
 > Task :app:createDebugApkListingFileRedirect
 > Task :app:assembleDebug
 
-BUILD SUCCESSFUL in 1m 55s
+BUILD SUCCESSFUL in 2m 1s
 31 actionable tasks: 31 executed
