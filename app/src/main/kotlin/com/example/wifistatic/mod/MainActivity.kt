@@ -30,6 +30,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var sbShowDuration: SeekBar
     private lateinit var tvShowDurationLabel: TextView
     private lateinit var cbShowOnWake: CheckBox
+    private lateinit var cbShowChannelSpeed: CheckBox
     private lateinit var tvTextPositionLabel: TextView
     private lateinit var tvIconSizeLabel: TextView
     private lateinit var tvFontSizeLabel: TextView
@@ -61,6 +62,7 @@ class MainActivity : AppCompatActivity() {
         sbShowDuration = findViewById(R.id.sbShowDuration)
         tvShowDurationLabel = findViewById(R.id.tvShowDurationLabel)
         cbShowOnWake = findViewById(R.id.cbShowOnWake)
+        cbShowChannelSpeed = findViewById(R.id.cbShowChannelSpeed)
         tvTextPositionLabel = findViewById(R.id.tvTextPositionLabel)
         tvIconSizeLabel = findViewById(R.id.tvIconSizeLabel)
         tvFontSizeLabel = findViewById(R.id.tvFontSizeLabel)
@@ -80,6 +82,7 @@ class MainActivity : AppCompatActivity() {
         cbAutoHide.isChecked = prefs.getBoolean("auto_hide", false)
         sbShowDuration.progress = prefs.getInt("show_duration_sec", 5)
         cbShowOnWake.isChecked = prefs.getBoolean("show_on_wake", false)
+        cbShowChannelSpeed.isChecked = prefs.getBoolean("show_channel_speed", true)
 
         updateTextPositionLabel()
         updateIconSizeLabel()
@@ -181,6 +184,12 @@ class MainActivity : AppCompatActivity() {
 
         cbShowOnWake.setOnCheckedChangeListener { _, isChecked ->
             prefs.edit().putBoolean("show_on_wake", isChecked).apply()
+        }
+
+        cbShowChannelSpeed.setOnCheckedChangeListener { _, isChecked ->
+            prefs.edit().putBoolean("show_channel_speed", isChecked).apply()
+            // Обновляем отображение сразу, не дожидаясь следующего события сети.
+            WifiOverlayService.getInstance()?.refreshStatus()
         }
 
         // Свернуть — просто закрывает окно настроек, оверлей продолжает работать.

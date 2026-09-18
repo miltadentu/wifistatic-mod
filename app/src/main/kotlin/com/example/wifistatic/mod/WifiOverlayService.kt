@@ -41,6 +41,8 @@ class WifiOverlayService : Service() {
     private var isAutoHideEnabled = false
     private var currentSSID = ""
     private var currentSignalPercent = -1
+    private var currentChannel = -1
+    private var currentLinkSpeedMbps = -1
     private var overlayAdded = false
     private var manuallyHidden = false
     private var settingsOpen = false
@@ -424,6 +426,19 @@ class WifiOverlayService : Service() {
                     currentSignalPercent = -1
                 }
 
+                try {
+                    currentChannel = frequencyToChannel(connectionInfo.frequency)
+                } catch (e: Exception) {
+                    currentChannel = -1
+                }
+
+                try {
+                    val speed = connectionInfo.linkSpeed // уже в Мбит/с; -1 если неизвестно
+                    currentLinkSpeedMbps = if (speed > 0) speed else -1
+                } catch (e: Exception) {
+                    currentLinkSpeedMbps = -1
+                }
+
                 updateTextDisplay()
             }
         } catch (e: Exception) {
@@ -431,11 +446,29 @@ class WifiOverlayService : Service() {
         }
     }
 
+    /** Стандартная формула перевода частоты (МГц) в номер WiFi-канала:
+     *  2.4 ГГц, 5 ГГц и 6 ГГц (WiFi 6E) диапазоны. */
+    private fun frequencyToChannel(freqMhz: Int): Int {
+        return when {
+            freqMhz in 2412..2472 -> (freqMhz - 2407) / 5
+            freqMhz == 2484 -> 14
+            freqMhz in 5170..5825 -> (freqMhz - 5000) / 5
+            freqMhz in 5955..7115 -> (freqMhz - 5950) / 5
+            else -> -1
+        }
+    }
+
     private fun updateTextDisplay() {
         wifiText.text = when (currentStatus) {
             WifiStatus.CONNECTED, WifiStatus.LIMITED -> {
                 val name = if (currentSSID.isNotBlank()) currentSSID else "WiFi"
-                if (currentSignalPercent >= 0) "$name  $currentSignalPercent%" else name
+                val line1 = if (currentSignalPercent >= 0) "$name  $currentSignalPercent%" else name
+                val showChannelSpeed = prefs.getBoolean("show_channel_speed", true)
+                if (showChannelSpeed && currentChannel > 0 && currentLinkSpeedMbps > 0) {
+                    "$line1\nCh. $currentChannel Link $currentLinkSpeedMbps mbit"
+                } else {
+                    line1
+                }
             }
             WifiStatus.DISCONNECTED -> "No WiFi"
             WifiStatus.UNKNOWN -> "WiFi"
