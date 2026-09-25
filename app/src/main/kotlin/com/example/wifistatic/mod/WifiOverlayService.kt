@@ -43,6 +43,7 @@ class WifiOverlayService : Service() {
     private var currentSignalPercent = -1
     private var currentChannel = -1
     private var currentLinkSpeedMbps = -1
+    private var lastConnectedNetworkId = -1
     private var overlayAdded = false
     private var manuallyHidden = false
     private var settingsOpen = false
@@ -397,6 +398,40 @@ class WifiOverlayService : Service() {
         if (newStatus != WifiStatus.DISCONNECTED) {
             val wm = getSystemService(Context.WIFI_SERVICE) as WifiManager
             updateWifiInfo(wm)
+
+            // Свежее подключение — драйвер только начинает разгонять
+            // PHY-скорость (это нормальное поведение 802.11, не баг), и
+            // getLinkSpeed() первое время отдаёт заниженное значение.
+            // Опрашиваем чаще именно в это "окно разгона", чтобы
+            // отображаемая цифра догоняла реальную скорость быстрее, чем
+            // раз в минуту (обычный период фоновой самопроверки).
+            try {
+                val newNetworkId = wm.connectionInfo?.networkId ?: -1
+                if (newNetworkId != -1 && newNetworkId != lastConnectedNetworkId) {
+                    lastConnectedNetworkId = newNetworkId
+                    scheduleSpeedRampChecks()
+                }
+            } catch (e: Exception) {
+                android.util.Log.e("WifiOverlayMod", "networkId check failed", e)
+            }
+        } else {
+            lastConnectedNetworkId = -1
+        }
+    }
+
+    /** Серия дополнительных проверок сразу после нового подключения —
+     *  ловит момент, когда драйвер догоняет PHY-скорость до максимума. */
+    private fun scheduleSpeedRampChecks() {
+        val delaysMs = longArrayOf(3_000, 7_000, 15_000, 30_000, 45_000)
+        for (delay in delaysMs) {
+            mainHandler.postDelayed({
+                try {
+                    val wm = getSystemService(Context.WIFI_SERVICE) as WifiManager
+                    updateWifiInfo(wm)
+                } catch (e: Exception) {
+                    android.util.Log.e("WifiOverlayMod", "Speed ramp check failed", e)
+                }
+            }, delay)
         }
     }
 
