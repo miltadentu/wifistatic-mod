@@ -14,6 +14,7 @@ import android.widget.Button
 import android.widget.CheckBox
 import android.widget.SeekBar
 import android.widget.TextView
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
@@ -48,6 +49,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var tvPermissionsStatus: TextView
     private lateinit var btnMinimize: Button
     private lateinit var btnClose: Button
+    private lateinit var btnRootGrant: Button
 
     companion object {
         private const val REQ_LOCATION_PERM = 501
@@ -91,6 +93,8 @@ class MainActivity : AppCompatActivity() {
         tvPermissionsStatus = findViewById(R.id.tvPermissionsStatus)
         btnMinimize = findViewById(R.id.btnMinimize)
         btnClose = findViewById(R.id.btnClose)
+        btnRootGrant = findViewById(R.id.btnRootGrant)
+        btnRootGrant.setOnClickListener { grantPermissionsViaRoot() }
     }
 
     private fun loadSettings() {
@@ -426,6 +430,47 @@ class MainActivity : AppCompatActivity() {
         } catch (e: Exception) {
             true
         }
+    }
+
+    /** Если у устройства есть root (синтаксис su 0 sh -c), приложение
+     *  само выдаёт себе все нужные разрешения. */
+    private fun grantPermissionsViaRoot() {
+        btnRootGrant.isEnabled = false
+        Toast.makeText(this, "Выдаю разрешения через root…", Toast.LENGTH_SHORT).show()
+        Thread {
+            val pkg = packageName
+            val cmds = listOf(
+                "pm grant $pkg android.permission.ACCESS_FINE_LOCATION",
+                "pm grant $pkg android.permission.ACCESS_COARSE_LOCATION",
+                "pm grant $pkg android.permission.ACCESS_BACKGROUND_LOCATION",
+                "appops set $pkg SYSTEM_ALERT_WINDOW allow",
+                "appops set $pkg RUN_IN_BACKGROUND allow",
+                "appops set $pkg RUN_ANY_IN_BACKGROUND allow",
+                "appops set $pkg SCHEDULE_EXACT_ALARM allow",
+                "dumpsys deviceidle whitelist +$pkg"
+            )
+            var rootOk = true
+            for (c in cmds) {
+                try {
+                    val pr = Runtime.getRuntime().exec(arrayOf("su", "0", "sh", "-c", c))
+                    pr.inputStream.readBytes(); pr.errorStream.readBytes()
+                    pr.waitFor()
+                } catch (e: Exception) {
+                    rootOk = false
+                    break
+                }
+            }
+            runOnUiThread {
+                btnRootGrant.isEnabled = true
+                Toast.makeText(
+                    this,
+                    if (rootOk) "Готово: разрешения выданы" else "Root недоступен на этом устройстве",
+                    Toast.LENGTH_LONG
+                ).show()
+                updatePermissionsStatus()
+                WifiOverlayService.getInstance()?.refreshStatus()
+            }
+        }.start()
     }
 
     private fun updatePermissionsStatus() {

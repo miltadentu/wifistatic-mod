@@ -272,6 +272,13 @@
             android:text="Цвет фона"
             android:textColor="#ffffffff" />
 
+        <Button
+            android:id="@+id/btnRootGrant"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="15dp"
+            android:text="Выдать все разрешения через root" />
+
         <TextView
             android:id="@+id/tvPermissionsStatus"
             android:layout_width="wrap_content"
