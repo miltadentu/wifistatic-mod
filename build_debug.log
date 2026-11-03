@@ -1,6 +1,6 @@
-openjdk version "17.0.20.1" 2026-08-18
-OpenJDK Runtime Environment Temurin-17.0.20.1+1 (build 17.0.20.1+1)
-OpenJDK 64-Bit Server VM Temurin-17.0.20.1+1 (build 17.0.20.1+1, mixed mode, sharing)
+openjdk version "17.0.21" 2026-10-20
+OpenJDK Runtime Environment Temurin-17.0.21+9 (build 17.0.21+9)
+OpenJDK 64-Bit Server VM Temurin-17.0.21+9 (build 17.0.21+9, mixed mode, sharing)
 Downloading https://services.gradle.org/distributions/gradle-8.0-bin.zip
 ......................................................................................................................
 Unzipping /home/runner/.gradle/wrapper/dists/gradle-8.0-bin/ca5e32bp14vu59qr306oxotwh/gradle-8.0-bin.zip to /home/runner/.gradle/wrapper/dists/gradle-8.0-bin/ca5e32bp14vu59qr306oxotwh
@@ -11,6 +11,7 @@ Welcome to Gradle 8.0!
 For more details see https://docs.gradle.org/8.0/release-notes.html
 
 Starting a Gradle Daemon (subsequent builds will be faster)
+Warning: SDK processing. This version only understands SDK XML versions up to 3 but an SDK XML file of version 4 was encountered. This can happen if you use versions of Android Studio and the command-line tools that were released at different times.
 WARNING: We recommend using a newer Android Gradle plugin to use compileSdk = 34
 
 This Android Gradle plugin (8.1.0) was tested up to compileSdk = 33 (and compileSdkPreview = "UpsideDownCakePrivacySandbox").
@@ -56,22 +57,22 @@ The AGP Upgrade Assistant can remove the attribute from the AndroidManifest.xml 
 > Task :app:javaPreCompileDebug
 > Task :app:mergeDebugShaders
 > Task :app:compileDebugShaders NO-SOURCE
+> Task :app:processDebugManifestForPackage
 > Task :app:generateDebugAssets UP-TO-DATE
 > Task :app:mergeDebugAssets
 > Task :app:compressDebugAssets
-> Task :app:processDebugManifestForPackage
 > Task :app:checkDebugDuplicateClasses
 > Task :app:processDebugResources
 > Task :app:desugarDebugFileDependencies
-
 > Task :app:compileDebugKotlin
-w: file:///home/runner/work/wifistatic-mod/wifistatic-mod/app/src/main/kotlin/com/example/wifistatic/mod/MainActivity.kt:353:54 'LOCATION_MODE: String' is deprecated. Deprecated in Java
-w: file:///home/runner/work/wifistatic-mod/wifistatic-mod/app/src/main/kotlin/com/example/wifistatic/mod/WifiOverlayService.kt:323:43 'CONNECTIVITY_ACTION: String' is deprecated. Deprecated in Java
-w: file:///home/runner/work/wifistatic-mod/wifistatic-mod/app/src/main/kotlin/com/example/wifistatic/mod/WifiOverlayService.kt:325:35 'SUPPLICANT_STATE_CHANGED_ACTION: String' is deprecated. Deprecated in Java
-w: file:///home/runner/work/wifistatic-mod/wifistatic-mod/app/src/main/kotlin/com/example/wifistatic/mod/WifiOverlayService.kt:409:39 'getter for connectionInfo: WifiInfo!' is deprecated. Deprecated in Java
-w: file:///home/runner/work/wifistatic-mod/wifistatic-mod/app/src/main/kotlin/com/example/wifistatic/mod/WifiOverlayService.kt:440:37 'getter for connectionInfo: WifiInfo!' is deprecated. Deprecated in Java
-w: file:///home/runner/work/wifistatic-mod/wifistatic-mod/app/src/main/kotlin/com/example/wifistatic/mod/WifiOverlayService.kt:458:45 'calculateSignalLevel(Int, Int): Int' is deprecated. Deprecated in Java
+w: file:///home/runner/work/wifistatic-mod/wifistatic-mod/app/src/main/kotlin/com/example/wifistatic/mod/MainActivity.kt:426:54 'LOCATION_MODE: String' is deprecated. Deprecated in Java
+w: file:///home/runner/work/wifistatic-mod/wifistatic-mod/app/src/main/kotlin/com/example/wifistatic/mod/WifiOverlayService.kt:368:43 'CONNECTIVITY_ACTION: String' is deprecated. Deprecated in Java
+w: file:///home/runner/work/wifistatic-mod/wifistatic-mod/app/src/main/kotlin/com/example/wifistatic/mod/WifiOverlayService.kt:370:35 'SUPPLICANT_STATE_CHANGED_ACTION: String' is deprecated. Deprecated in Java
+w: file:///home/runner/work/wifistatic-mod/wifistatic-mod/app/src/main/kotlin/com/example/wifistatic/mod/WifiOverlayService.kt:454:39 'getter for connectionInfo: WifiInfo!' is deprecated. Deprecated in Java
+w: file:///home/runner/work/wifistatic-mod/wifistatic-mod/app/src/main/kotlin/com/example/wifistatic/mod/WifiOverlayService.kt:485:37 'getter for connectionInfo: WifiInfo!' is deprecated. Deprecated in Java
+w: file:///home/runner/work/wifistatic-mod/wifistatic-mod/app/src/main/kotlin/com/example/wifistatic/mod/WifiOverlayService.kt:503:45 'calculateSignalLevel(Int, Int): Int' is deprecated. Deprecated in Java
 
+> Task :app:mergeExtDexDebug
 > Task :app:compileDebugJavaWithJavac NO-SOURCE
 > Task :app:processDebugJavaRes
 > Task :app:mergeLibDexDebug
@@ -79,12 +80,11 @@ w: file:///home/runner/work/wifistatic-mod/wifistatic-mod/app/src/main/kotlin/co
 > Task :app:dexBuilderDebug
 > Task :app:mergeDebugJniLibFolders
 > Task :app:mergeDebugNativeLibs NO-SOURCE
-> Task :app:stripDebugDebugSymbols NO-SOURCE
 > Task :app:mergeProjectDexDebug
+> Task :app:stripDebugDebugSymbols NO-SOURCE
 > Task :app:validateSigningDebug
 > Task :app:writeDebugAppMetadata
 > Task :app:writeDebugSigningConfigVersions
-> Task :app:mergeExtDexDebug
 
 > Task :app:packageDebug
 PackagingOptions.jniLibs.useLegacyPackaging should be set to false because android:extractNativeLibs is set to "false" in AndroidManifest.xml. Avoid setting android:extractNativeLibs="false" explicitly in AndroidManifest.xml, and instead set android.packagingOptions.jniLibs.useLegacyPackaging to false in the build.gradle file.
@@ -92,5 +92,5 @@ PackagingOptions.jniLibs.useLegacyPackaging should be set to false because andro
 > Task :app:createDebugApkListingFileRedirect
 > Task :app:assembleDebug
 
-BUILD SUCCESSFUL in 1m 17s
+BUILD SUCCESSFUL in 2m 7s
 31 actionable tasks: 31 executed
