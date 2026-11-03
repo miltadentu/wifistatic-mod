@@ -34,6 +34,17 @@ class MainActivity : AppCompatActivity() {
     private lateinit var tvTextPositionLabel: TextView
     private lateinit var tvIconSizeLabel: TextView
     private lateinit var tvFontSizeLabel: TextView
+    private lateinit var sbTextBgAlpha: SeekBar
+    private lateinit var sbBgAlpha: SeekBar
+    private lateinit var sbBgR: SeekBar
+    private lateinit var sbBgG: SeekBar
+    private lateinit var sbBgB: SeekBar
+    private lateinit var tvTextBgAlphaLabel: TextView
+    private lateinit var tvBgAlphaLabel: TextView
+    private lateinit var tvBgRLabel: TextView
+    private lateinit var tvBgGLabel: TextView
+    private lateinit var tvBgBLabel: TextView
+    private lateinit var tvBgColorPreview: TextView
     private lateinit var tvPermissionsStatus: TextView
     private lateinit var btnMinimize: Button
     private lateinit var btnClose: Button
@@ -66,6 +77,17 @@ class MainActivity : AppCompatActivity() {
         tvTextPositionLabel = findViewById(R.id.tvTextPositionLabel)
         tvIconSizeLabel = findViewById(R.id.tvIconSizeLabel)
         tvFontSizeLabel = findViewById(R.id.tvFontSizeLabel)
+        sbTextBgAlpha = findViewById(R.id.sbTextBgAlpha)
+        sbBgAlpha = findViewById(R.id.sbBgAlpha)
+        sbBgR = findViewById(R.id.sbBgR)
+        sbBgG = findViewById(R.id.sbBgG)
+        sbBgB = findViewById(R.id.sbBgB)
+        tvTextBgAlphaLabel = findViewById(R.id.tvTextBgAlphaLabel)
+        tvBgAlphaLabel = findViewById(R.id.tvBgAlphaLabel)
+        tvBgRLabel = findViewById(R.id.tvBgRLabel)
+        tvBgGLabel = findViewById(R.id.tvBgGLabel)
+        tvBgBLabel = findViewById(R.id.tvBgBLabel)
+        tvBgColorPreview = findViewById(R.id.tvBgColorPreview)
         tvPermissionsStatus = findViewById(R.id.tvPermissionsStatus)
         btnMinimize = findViewById(R.id.btnMinimize)
         btnClose = findViewById(R.id.btnClose)
@@ -79,6 +101,12 @@ class MainActivity : AppCompatActivity() {
         sbTextPosition.progress = prefs.getInt("text_position", 0)
         sbIconSize.progress = prefs.getInt("icon_size", 60)
         sbFontSize.progress = prefs.getInt("text_size", 24)
+        sbTextBgAlpha.progress = prefs.getInt("text_bg_alpha", 120)
+        sbBgAlpha.progress = prefs.getInt("bg_alpha", 90)
+        val savedBg = prefs.getInt("bg_color", 0x000000)
+        sbBgR.progress = (savedBg shr 16) and 0xFF
+        sbBgG.progress = (savedBg shr 8) and 0xFF
+        sbBgB.progress = savedBg and 0xFF
         cbAutoHide.isChecked = prefs.getBoolean("auto_hide", false)
         sbShowDuration.progress = prefs.getInt("show_duration_sec", 5)
         cbShowOnWake.isChecked = prefs.getBoolean("show_on_wake", false)
@@ -87,6 +115,7 @@ class MainActivity : AppCompatActivity() {
         updateTextPositionLabel()
         updateIconSizeLabel()
         updateFontSizeLabel()
+        updateBgLabels()
         updateShowDurationLabel()
     }
 
@@ -165,6 +194,35 @@ class MainActivity : AppCompatActivity() {
             override fun onStopTrackingTouch(seekBar: SeekBar?) {}
         })
 
+        sbTextBgAlpha.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+            override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
+                if (fromUser) {
+                    updateBgLabels()
+                    WifiOverlayService.getInstance()?.updateTextBackgroundAlpha(progress)
+                    prefs.edit().putInt("text_bg_alpha", progress).apply()
+                }
+            }
+            override fun onStartTrackingTouch(seekBar: SeekBar?) {}
+            override fun onStopTrackingTouch(seekBar: SeekBar?) {}
+        })
+
+        val bgListener = object : SeekBar.OnSeekBarChangeListener {
+            override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
+                if (fromUser) {
+                    updateBgLabels()
+                    val rgb = (sbBgR.progress shl 16) or (sbBgG.progress shl 8) or sbBgB.progress
+                    WifiOverlayService.getInstance()?.updateIndicatorBackground(rgb, sbBgAlpha.progress)
+                    prefs.edit().putInt("bg_color", rgb).putInt("bg_alpha", sbBgAlpha.progress).apply()
+                }
+            }
+            override fun onStartTrackingTouch(seekBar: SeekBar?) {}
+            override fun onStopTrackingTouch(seekBar: SeekBar?) {}
+        }
+        sbBgAlpha.setOnSeekBarChangeListener(bgListener)
+        sbBgR.setOnSeekBarChangeListener(bgListener)
+        sbBgG.setOnSeekBarChangeListener(bgListener)
+        sbBgB.setOnSeekBarChangeListener(bgListener)
+
         cbAutoHide.setOnCheckedChangeListener { _, isChecked ->
             WifiOverlayService.getInstance()?.updateAutoHideSetting(isChecked)
             prefs.edit().putBoolean("auto_hide", isChecked).apply()
@@ -212,6 +270,17 @@ class MainActivity : AppCompatActivity() {
 
     private fun updateIconSizeLabel() {
         tvIconSizeLabel.text = "${sbIconSize.progress}px"
+    }
+
+    private fun updateBgLabels() {
+        tvTextBgAlphaLabel.text = "${sbTextBgAlpha.progress}"
+        tvBgAlphaLabel.text = "${sbBgAlpha.progress}"
+        tvBgRLabel.text = "${sbBgR.progress}"
+        tvBgGLabel.text = "${sbBgG.progress}"
+        tvBgBLabel.text = "${sbBgB.progress}"
+        val c = android.graphics.Color.argb(
+            maxOf(sbBgAlpha.progress, 60), sbBgR.progress, sbBgG.progress, sbBgB.progress)
+        tvBgColorPreview.setBackgroundColor(c)
     }
 
     private fun updateFontSizeLabel() {

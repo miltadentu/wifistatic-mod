@@ -18,6 +18,7 @@ import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
 import android.provider.Settings
+import android.graphics.drawable.GradientDrawable
 import android.view.Gravity
 import android.view.WindowManager
 import android.widget.ImageView
@@ -158,9 +159,7 @@ class WifiOverlayService : Service() {
             scaleType = ImageView.ScaleType.FIT_CENTER
         }
 
-        wifiText = TextView(this).apply {
-            setPadding(8, 0, 0, 0)
-        }
+        wifiText = TextView(this)
 
         container.addView(wifiIcon)
         container.addView(wifiText)
@@ -197,6 +196,8 @@ class WifiOverlayService : Service() {
         applyIconSize(iconSize)
         updateContainerLayout(textPosition)
         updateFontSize(textSizeSp)
+        applyTextBackgroundAlpha(prefs.getInt("text_bg_alpha", 120))
+        applyIndicatorBackground(prefs.getInt("bg_color", 0x000000), prefs.getInt("bg_alpha", 90))
 
         container.alpha = alpha / 255f
         try {
@@ -218,6 +219,50 @@ class WifiOverlayService : Service() {
 
     private fun updateContainerLayout(position: Int) {
         container.orientation = if (position == 0) LinearLayout.HORIZONTAL else LinearLayout.VERTICAL
+    }
+
+    /** Серый полупрозрачный фон только под текстом. */
+    private fun applyTextBackgroundAlpha(alpha: Int) {
+        val a = alpha.coerceIn(0, 255)
+        if (a <= 0) {
+            wifiText.background = null
+            wifiText.setPadding(8, 0, 0, 0)
+        } else {
+            val bg = GradientDrawable()
+            bg.cornerRadius = 10f
+            bg.setColor(android.graphics.Color.GRAY)
+            bg.alpha = a
+            wifiText.background = bg
+            wifiText.setPadding(14, 6, 14, 6)
+        }
+    }
+
+    fun updateTextBackgroundAlpha(alpha: Int) {
+        applyTextBackgroundAlpha(alpha)
+        if (overlayAdded) windowManager.updateViewLayout(container, params)
+        prefs.edit().putInt("text_bg_alpha", alpha).apply()
+    }
+
+    /** Полупрозрачный фон всего индикатора: цвет RGB + прозрачность. */
+    private fun applyIndicatorBackground(rgb: Int, alpha: Int) {
+        val a = alpha.coerceIn(0, 255)
+        if (a <= 0) {
+            container.background = null
+            container.setPadding(0, 0, 0, 0)
+        } else {
+            val bg = GradientDrawable()
+            bg.cornerRadius = 16f
+            bg.setColor(rgb or (0xFF shl 24))
+            bg.alpha = a
+            container.background = bg
+            container.setPadding(10, 6, 10, 6)
+        }
+    }
+
+    fun updateIndicatorBackground(rgb: Int, alpha: Int) {
+        applyIndicatorBackground(rgb, alpha)
+        if (overlayAdded) windowManager.updateViewLayout(container, params)
+        prefs.edit().putInt("bg_color", rgb).putInt("bg_alpha", alpha).apply()
     }
 
     private fun updateFontSize(sp: Int) {

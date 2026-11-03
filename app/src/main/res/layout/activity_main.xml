@@ -160,6 +160,119 @@
             android:textColor="#ff00ff00" />
 
         <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Прозрачность фона текста (серый)"
+            android:textColor="#ff00ff00"
+            android:layout_marginTop="10dp" />
+
+        <SeekBar
+            android:id="@+id/sbTextBgAlpha"
+            android:layout_width="600dp"
+            android:layout_height="35dp"
+            android:max="255"
+            android:progress="120" />
+
+        <TextView
+            android:id="@+id/tvTextBgAlphaLabel"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="120"
+            android:textColor="#ff00ff00" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Фон индикатора: прозрачность"
+            android:textColor="#ff00ff00"
+            android:layout_marginTop="10dp" />
+
+        <SeekBar
+            android:id="@+id/sbBgAlpha"
+            android:layout_width="600dp"
+            android:layout_height="35dp"
+            android:max="255"
+            android:progress="90" />
+
+        <TextView
+            android:id="@+id/tvBgAlphaLabel"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="90"
+            android:textColor="#ff00ff00" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Фон индикатора: красный"
+            android:textColor="#ff00ff00"
+            android:layout_marginTop="10dp" />
+
+        <SeekBar
+            android:id="@+id/sbBgR"
+            android:layout_width="600dp"
+            android:layout_height="35dp"
+            android:max="255"
+            android:progress="0" />
+
+        <TextView
+            android:id="@+id/tvBgRLabel"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="0"
+            android:textColor="#ff00ff00" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Фон индикатора: зелёный"
+            android:textColor="#ff00ff00"
+            android:layout_marginTop="10dp" />
+
+        <SeekBar
+            android:id="@+id/sbBgG"
+            android:layout_width="600dp"
+            android:layout_height="35dp"
+            android:max="255"
+            android:progress="0" />
+
+        <TextView
+            android:id="@+id/tvBgGLabel"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="0"
+            android:textColor="#ff00ff00" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Фон индикатора: синий"
+            android:textColor="#ff00ff00"
+            android:layout_marginTop="10dp" />
+
+        <SeekBar
+            android:id="@+id/sbBgB"
+            android:layout_width="600dp"
+            android:layout_height="35dp"
+            android:max="255"
+            android:progress="0" />
+
+        <TextView
+            android:id="@+id/tvBgBLabel"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="0"
+            android:textColor="#ff00ff00" />
+
+        <TextView
+            android:id="@+id/tvBgColorPreview"
+            android:layout_width="600dp"
+            android:layout_height="30dp"
+            android:gravity="center"
+            android:text="Цвет фона"
+            android:textColor="#ffffffff" />
+
+        <TextView
             android:id="@+id/tvPermissionsStatus"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
