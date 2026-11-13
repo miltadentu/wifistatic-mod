@@ -30,9 +30,14 @@ jobs:
         echo "tag=$TAG" >> "$GITHUB_OUTPUT"
         echo "apk=$APK" >> "$GITHUB_OUTPUT"
 
-    - name: Download signed APK from ci-apk branch
+    - name: Checkout ci-apk branch
+      uses: actions/checkout@v4
+      with:
+        ref: ci-apk
+
+    - name: Prepare signed APK
       run: |
-        curl -fsSL -o app.apk "https://raw.githubusercontent.com/${{ github.repository }}/ci-apk/${{ steps.in.outputs.apk }}"
+        cp "${{ steps.in.outputs.apk }}" app.apk
         ls -l app.apk
 
     - name: Create GitHub Release
