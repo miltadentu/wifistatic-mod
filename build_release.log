@@ -43,8 +43,8 @@ The AGP Upgrade Assistant can remove the attribute from the AndroidManifest.xml 
 > Task :app:processReleaseManifest
 > Task :app:javaPreCompileRelease
 > Task :app:desugarReleaseFileDependencies
-> Task :app:mergeReleaseResources
 > Task :app:processReleaseManifestForPackage
+> Task :app:mergeReleaseResources
 > Task :app:mergeReleaseArtProfile
 > Task :app:mergeReleaseShaders
 > Task :app:compileReleaseShaders NO-SOURCE
@@ -81,5 +81,5 @@ PackagingOptions.jniLibs.useLegacyPackaging should be set to false because andro
 > Task :app:createReleaseApkListingFileRedirect
 > Task :app:assembleRelease
 
-BUILD SUCCESSFUL in 29s
+BUILD SUCCESSFUL in 26s
 36 actionable tasks: 36 executed
