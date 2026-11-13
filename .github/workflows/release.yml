@@ -1,0 +1,46 @@
+name: Publish Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag (e.g. v4.3)'
+        required: true
+        default: 'v4.3'
+      apk:
+        description: 'Signed APK path on ci-apk branch'
+        required: true
+        default: 'signed/WiFiStaticMod-RELEASE-v21.apk'
+  push:
+    tags: [ 'v*' ]
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+    - name: Resolve inputs
+      id: in
+      run: |
+        TAG="${{ github.event.inputs.tag }}"
+        APK="${{ github.event.inputs.apk }}"
+        if [ -z "$TAG" ]; then TAG="${GITHUB_REF_NAME}"; fi
+        if [ -z "$APK" ]; then APK="signed/WiFiStaticMod-RELEASE-v21.apk"; fi
+        echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+        echo "apk=$APK" >> "$GITHUB_OUTPUT"
+
+    - name: Download signed APK from ci-apk branch
+      run: |
+        curl -fsSL -o app.apk "https://raw.githubusercontent.com/${{ github.repository }}/ci-apk/${{ steps.in.outputs.apk }}"
+        ls -l app.apk
+
+    - name: Create GitHub Release
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        gh release create "${{ steps.in.outputs.tag }}" app.apk \
+          --repo "${{ github.repository }}" \
+          --target main \
+          --title "WiFi Static Monitor MOD ${{ steps.in.outputs.tag }}" \
+          --notes "Подписанный release APK (versionCode 21). Ставится поверх предыдущих версий. Новое: иконка лаунчера, серый фон под текстом с ползунком прозрачности, настраиваемый фон индикатора (цвет + прозрачность), кнопка выдачи всех разрешений через root, номер канала и скорость второй строкой, показ при пробуждении ТВ, показ на N секунд по ADB."
