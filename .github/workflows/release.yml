@@ -37,14 +37,15 @@ jobs:
 
     - name: Prepare signed APK
       run: |
-        cp "${{ steps.in.outputs.apk }}" app.apk
-        ls -l app.apk
+        cp "${{ steps.in.outputs.apk }}" "$(basename "${{ steps.in.outputs.apk }}")"
+        ls -l *.apk
 
     - name: Create GitHub Release
       env:
         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
-        gh release create "${{ steps.in.outputs.tag }}" app.apk \
+        gh release delete "${{ steps.in.outputs.tag }}" --repo "${{ github.repository }}" --yes --cleanup-tag || true
+        gh release create "${{ steps.in.outputs.tag }}" "$(basename "${{ steps.in.outputs.apk }}")" \
           --repo "${{ github.repository }}" \
           --target main \
           --title "WiFi Static Monitor MOD ${{ steps.in.outputs.tag }}" \
