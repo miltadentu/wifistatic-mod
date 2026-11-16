@@ -592,7 +592,7 @@ class MainActivity : AppCompatActivity() {
             !cbLog.isChecked -> ""
             err.isNotEmpty() -> err
             !storageOk -> "Нет разрешения на запись в память — нажми кнопку root внизу или разреши доступ"
-            else -> "Лог включён"
+            else -> "Лог включён. Последняя проверка интернета: " + (prefs.getString("log_probe_info", "—") ?: "—")
         }
         if (cbFgApps.isChecked && !AppWatcher.hasUsageAccess(this)) {
             tvFgAppsLabel.text = tvFgAppsLabel.text.toString() + " (нет доступа к статистике использования!)"

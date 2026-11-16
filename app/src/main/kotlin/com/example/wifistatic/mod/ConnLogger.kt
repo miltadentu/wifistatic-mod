@@ -183,25 +183,53 @@ class ConnLogger(private val ctx: Context, private val path: String) {
 
     // ---------- сетевые проверки ----------
 
+    /**
+     * Реальная проверка интернета через именно эту WiFi-сеть:
+     * 1) HTTPS generate_204 (gstatic, cloudflare) — ждём ответ 204;
+     * 2) HTTPS captive.apple.com — ждём 200;
+     * 3) запасной вариант: TCP-соединение по IP (1.1.1.1:443, 8.8.8.8:443),
+     *    если DNS или конкретный сайт недоступны.
+     * (Обычный http:// на Android 9+ запрещён для приложений targetSdk 28+.)
+     */
     private fun probe(network: Network): Boolean {
-        val urls = listOf(
-            "http://connectivitycheck.gstatic.com/generate_204",
-            "http://cp.cloudflare.com/generate_204"
+        val https = listOf(
+            "https://connectivitycheck.gstatic.com/generate_204" to 204,
+            "https://cp.cloudflare.com/generate_204" to 204,
+            "https://captive.apple.com/hotspot-detect.html" to 200
         )
-        for (u in urls) {
+        for ((u, want) in https) {
             try {
                 val c = network.openConnection(URL(u)) as HttpURLConnection
-                c.connectTimeout = 5000
-                c.readTimeout = 5000
+                c.connectTimeout = 4000
+                c.readTimeout = 4000
                 c.instanceFollowRedirects = false
                 c.useCaches = false
                 val code = c.responseCode
                 c.disconnect()
-                if (code == 204) return true
+                if (code == want) { lastProbeInfo("HTTPS ok: ${URL(u).host}"); return true }
             } catch (_: Exception) {
             }
         }
+        for ((ip, port) in listOf("1.1.1.1" to 443, "8.8.8.8" to 443)) {
+            try {
+                val sock = network.socketFactory.createSocket()
+                sock.connect(java.net.InetSocketAddress(ip, port), 4000)
+                sock.close()
+                lastProbeInfo("TCP ok: $ip")
+                return true
+            } catch (_: Exception) {
+            }
+        }
+        lastProbeInfo("все проверки не прошли")
         return false
+    }
+
+    private fun lastProbeInfo(text: String) {
+        try {
+            val t = SimpleDateFormat("HH:mm:ss", Locale.US).format(Date())
+            ctx.getSharedPreferences("wifi_prefs", Context.MODE_PRIVATE).edit()
+                .putString("log_probe_info", "$t $text").apply()
+        } catch (_: Exception) {}
     }
 
     private fun externalIp(network: Network): String? {
