@@ -62,16 +62,8 @@ The AGP Upgrade Assistant can remove the attribute from the AndroidManifest.xml 
 > Task :app:compressDebugAssets
 > Task :app:processDebugManifestForPackage
 > Task :app:checkDebugDuplicateClasses
-> Task :app:desugarDebugFileDependencies
 > Task :app:processDebugResources
-> Task :app:mergeExtDexDebug
-> Task :app:mergeLibDexDebug
-> Task :app:mergeDebugJniLibFolders
-> Task :app:mergeDebugNativeLibs NO-SOURCE
-> Task :app:stripDebugDebugSymbols NO-SOURCE
-> Task :app:validateSigningDebug
-> Task :app:writeDebugAppMetadata
-> Task :app:writeDebugSigningConfigVersions
+> Task :app:desugarDebugFileDependencies
 
 > Task :app:compileDebugKotlin
 w: file:///home/runner/work/wifistatic-mod/wifistatic-mod/app/src/main/kotlin/com/example/wifistatic/mod/MainActivity.kt:438:54 'LOCATION_MODE: String' is deprecated. Deprecated in Java
@@ -83,9 +75,17 @@ w: file:///home/runner/work/wifistatic-mod/wifistatic-mod/app/src/main/kotlin/co
 
 > Task :app:compileDebugJavaWithJavac NO-SOURCE
 > Task :app:processDebugJavaRes
+> Task :app:mergeLibDexDebug
 > Task :app:mergeDebugJavaResource
 > Task :app:dexBuilderDebug
+> Task :app:mergeDebugJniLibFolders
 > Task :app:mergeProjectDexDebug
+> Task :app:mergeDebugNativeLibs NO-SOURCE
+> Task :app:stripDebugDebugSymbols NO-SOURCE
+> Task :app:validateSigningDebug
+> Task :app:writeDebugAppMetadata
+> Task :app:writeDebugSigningConfigVersions
+> Task :app:mergeExtDexDebug
 
 > Task :app:packageDebug
 PackagingOptions.jniLibs.useLegacyPackaging should be set to false because android:extractNativeLibs is set to "false" in AndroidManifest.xml. Avoid setting android:extractNativeLibs="false" explicitly in AndroidManifest.xml, and instead set android.packagingOptions.jniLibs.useLegacyPackaging to false in the build.gradle file.
@@ -93,5 +93,5 @@ PackagingOptions.jniLibs.useLegacyPackaging should be set to false because andro
 > Task :app:createDebugApkListingFileRedirect
 > Task :app:assembleDebug
 
-BUILD SUCCESSFUL in 1m 36s
+BUILD SUCCESSFUL in 1m 24s
 31 actionable tasks: 31 executed
