@@ -272,6 +272,77 @@
             android:text="Цвет фона"
             android:textColor="#ffffffff" />
 
+        <CheckBox
+            android:id="@+id/cbFgApps"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Показать статус в приложениях"
+            android:textSize="16sp"
+            android:textColor="#ff00ff00"
+            android:layout_marginTop="15dp" />
+
+        <Button
+            android:id="@+id/btnPickApps"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Выбрать приложения…" />
+
+        <TextView
+            android:id="@+id/tvFgAppsLabel"
+            android:layout_width="600dp"
+            android:layout_height="wrap_content"
+            android:text=""
+            android:textColor="#ffaaaaaa" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Время показа в приложениях"
+            android:textColor="#ff00ff00"
+            android:layout_marginTop="5dp" />
+
+        <SeekBar
+            android:id="@+id/sbFgShow"
+            android:layout_width="600dp"
+            android:layout_height="35dp"
+            android:max="60"
+            android:progress="5" />
+
+        <TextView
+            android:id="@+id/tvFgShowLabel"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="5 сек"
+            android:textColor="#ff00ff00" />
+
+        <CheckBox
+            android:id="@+id/cbLog"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Писать лог в файл"
+            android:textSize="16sp"
+            android:textColor="#ff00ff00"
+            android:layout_marginTop="15dp" />
+
+        <EditText
+            android:id="@+id/etLogPath"
+            android:layout_width="600dp"
+            android:layout_height="wrap_content"
+            android:hint="/sdcard/wifi_status.log"
+            android:inputType="textUri"
+            android:imeOptions="actionDone"
+            android:singleLine="true"
+            android:textColor="#ffffffff"
+            android:textColorHint="#ff888888" />
+
+        <TextView
+            android:id="@+id/tvLogStatus"
+            android:layout_width="600dp"
+            android:layout_height="wrap_content"
+            android:text=""
+            android:textSize="13sp"
+            android:textColor="#ffaaaaaa" />
+
         <Button
             android:id="@+id/btnRootGrant"
             android:layout_width="wrap_content"

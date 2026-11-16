@@ -10,7 +10,9 @@ import android.os.Build
 import android.os.Bundle
 import android.os.PowerManager
 import android.provider.Settings
+import android.view.inputmethod.EditorInfo
 import android.widget.Button
+import android.widget.EditText
 import android.widget.CheckBox
 import android.widget.SeekBar
 import android.widget.TextView
@@ -50,9 +52,18 @@ class MainActivity : AppCompatActivity() {
     private lateinit var btnMinimize: Button
     private lateinit var btnClose: Button
     private lateinit var btnRootGrant: Button
+    private lateinit var cbFgApps: CheckBox
+    private lateinit var btnPickApps: Button
+    private lateinit var tvFgAppsLabel: TextView
+    private lateinit var sbFgShow: SeekBar
+    private lateinit var tvFgShowLabel: TextView
+    private lateinit var cbLog: CheckBox
+    private lateinit var etLogPath: EditText
+    private lateinit var tvLogStatus: TextView
 
     companion object {
         private const val REQ_LOCATION_PERM = 501
+        private const val REQ_STORAGE_PERM = 502
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -95,6 +106,7 @@ class MainActivity : AppCompatActivity() {
         btnClose = findViewById(R.id.btnClose)
         btnRootGrant = findViewById(R.id.btnRootGrant)
         btnRootGrant.setOnClickListener { grantPermissionsViaRoot() }
+        setupExtraSettings()
     }
 
     private fun loadSettings() {
@@ -447,6 +459,9 @@ class MainActivity : AppCompatActivity() {
                 "appops set $pkg RUN_IN_BACKGROUND allow",
                 "appops set $pkg RUN_ANY_IN_BACKGROUND allow",
                 "appops set $pkg SCHEDULE_EXACT_ALARM allow",
+                "pm grant $pkg android.permission.WRITE_EXTERNAL_STORAGE",
+                "pm grant $pkg android.permission.READ_EXTERNAL_STORAGE",
+                "appops set $pkg GET_USAGE_STATS allow",
                 "dumpsys deviceidle whitelist +$pkg"
             )
             var rootOk = true
@@ -469,8 +484,151 @@ class MainActivity : AppCompatActivity() {
                 ).show()
                 updatePermissionsStatus()
                 WifiOverlayService.getInstance()?.refreshStatus()
+                WifiOverlayService.getInstance()?.applyExtraFeatures()
+                refreshExtraStatus()
             }
         }.start()
+    }
+
+    // ---------- «Показать статус в приложениях» и лог в файл ----------
+
+    private fun setupExtraSettings() {
+        val prefs = getSharedPreferences("wifi_prefs", Context.MODE_PRIVATE)
+        cbFgApps = findViewById(R.id.cbFgApps)
+        btnPickApps = findViewById(R.id.btnPickApps)
+        tvFgAppsLabel = findViewById(R.id.tvFgAppsLabel)
+        sbFgShow = findViewById(R.id.sbFgShow)
+        tvFgShowLabel = findViewById(R.id.tvFgShowLabel)
+        cbLog = findViewById(R.id.cbLog)
+        etLogPath = findViewById(R.id.etLogPath)
+        tvLogStatus = findViewById(R.id.tvLogStatus)
+
+        cbFgApps.isChecked = prefs.getBoolean("fg_enabled", false)
+        sbFgShow.progress = prefs.getInt("fg_show_sec", 5)
+        cbLog.isChecked = prefs.getBoolean("log_enabled", false)
+        etLogPath.setText(prefs.getString("log_path", "/sdcard/wifi_status.log"))
+        updateFgControls()
+
+        cbFgApps.setOnCheckedChangeListener { _, checked ->
+            prefs.edit().putBoolean("fg_enabled", checked).apply()
+            updateFgControls()
+            if (checked && !AppWatcher.hasUsageAccess(this)) {
+                Toast.makeText(
+                    this,
+                    "Нужен доступ к статистике использования. Включи его для этого приложения или нажми кнопку root внизу.",
+                    Toast.LENGTH_LONG
+                ).show()
+                try {
+                    startActivity(Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS))
+                } catch (e: Exception) {
+                    Toast.makeText(this, "На этом ТВ нет экрана доступа — используй кнопку root внизу", Toast.LENGTH_LONG).show()
+                }
+            }
+            WifiOverlayService.getInstance()?.applyExtraFeatures()
+        }
+        btnPickApps.setOnClickListener { showAppPicker() }
+        sbFgShow.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+            override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
+                if (fromUser) {
+                    prefs.edit().putInt("fg_show_sec", progress.coerceAtLeast(1)).apply()
+                    updateFgControls()
+                }
+            }
+            override fun onStartTrackingTouch(seekBar: SeekBar?) {}
+            override fun onStopTrackingTouch(seekBar: SeekBar?) {
+                WifiOverlayService.getInstance()?.applyExtraFeatures()
+            }
+        })
+
+        cbLog.setOnCheckedChangeListener { _, checked ->
+            prefs.edit().putBoolean("log_enabled", checked).apply()
+            etLogPath.isEnabled = checked
+            if (checked) {
+                saveLogPath()
+                if (ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                    != PackageManager.PERMISSION_GRANTED) {
+                    ActivityCompat.requestPermissions(
+                        this, arrayOf(Manifest.permission.WRITE_EXTERNAL_STORAGE), REQ_STORAGE_PERM
+                    )
+                }
+            }
+            WifiOverlayService.getInstance()?.applyExtraFeatures()
+            refreshExtraStatus()
+        }
+        etLogPath.setOnFocusChangeListener { _, hasFocus -> if (!hasFocus) applyLogPath() }
+        etLogPath.setOnEditorActionListener { _, actionId, _ ->
+            if (actionId == EditorInfo.IME_ACTION_DONE) { applyLogPath(); true } else false
+        }
+        refreshExtraStatus()
+    }
+
+    private fun updateFgControls() {
+        val on = cbFgApps.isChecked
+        btnPickApps.isEnabled = on
+        sbFgShow.isEnabled = on
+        tvFgShowLabel.text = "${sbFgShow.progress.coerceAtLeast(1)} сек"
+        etLogPath.isEnabled = cbLog.isChecked
+        val n = (getSharedPreferences("wifi_prefs", Context.MODE_PRIVATE)
+            .getStringSet("fg_apps", emptySet()) ?: emptySet()).size
+        tvFgAppsLabel.text = if (n == 0) "Приложения не выбраны" else "Выбрано приложений: $n"
+    }
+
+    private fun saveLogPath() {
+        val path = etLogPath.text.toString().trim().ifEmpty { "/sdcard/wifi_status.log" }
+        getSharedPreferences("wifi_prefs", Context.MODE_PRIVATE).edit().putString("log_path", path).apply()
+    }
+
+    private fun applyLogPath() {
+        saveLogPath()
+        if (cbLog.isChecked) WifiOverlayService.getInstance()?.applyExtraFeatures()
+    }
+
+    private fun refreshExtraStatus() {
+        val prefs = getSharedPreferences("wifi_prefs", Context.MODE_PRIVATE)
+        val err = prefs.getString("log_error", "") ?: ""
+        val storageOk = ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) ==
+                PackageManager.PERMISSION_GRANTED
+        tvLogStatus.text = when {
+            !cbLog.isChecked -> ""
+            err.isNotEmpty() -> err
+            !storageOk -> "Нет разрешения на запись в память — нажми кнопку root внизу или разреши доступ"
+            else -> "Лог включён"
+        }
+        if (cbFgApps.isChecked && !AppWatcher.hasUsageAccess(this)) {
+            tvFgAppsLabel.text = tvFgAppsLabel.text.toString() + " (нет доступа к статистике использования!)"
+        }
+    }
+
+    private fun showAppPicker() {
+        val prefs = getSharedPreferences("wifi_prefs", Context.MODE_PRIVATE)
+        val pm = packageManager
+        val apps = LinkedHashMap<String, String>()
+        for (cat in listOf(Intent.CATEGORY_LAUNCHER, Intent.CATEGORY_LEANBACK_LAUNCHER)) {
+            val q = Intent(Intent.ACTION_MAIN).addCategory(cat)
+            for (ri in pm.queryIntentActivities(q, 0)) {
+                val pkg = ri.activityInfo.packageName
+                if (pkg == packageName) continue
+                if (!apps.containsKey(pkg)) apps[pkg] = ri.loadLabel(pm).toString()
+            }
+        }
+        val sorted = apps.entries.sortedBy { it.value.lowercase() }
+        val pkgs = sorted.map { it.key }
+        val names = sorted.map { it.value }.toTypedArray()
+        val selected = (prefs.getStringSet("fg_apps", emptySet()) ?: emptySet()).toMutableSet()
+        val checked = BooleanArray(pkgs.size) { pkgs[it] in selected }
+        androidx.appcompat.app.AlertDialog.Builder(this)
+            .setTitle("Показывать статус в приложениях")
+            .setMultiChoiceItems(names, checked) { _, which, isChecked ->
+                if (isChecked) selected.add(pkgs[which]) else selected.remove(pkgs[which])
+            }
+            .setPositiveButton("Готово") { _, _ ->
+                prefs.edit().putStringSet("fg_apps", HashSet(selected)).apply()
+                updateFgControls()
+                WifiOverlayService.getInstance()?.applyExtraFeatures()
+                refreshExtraStatus()
+            }
+            .setNegativeButton("Отмена", null)
+            .show()
     }
 
     private fun updatePermissionsStatus() {
@@ -507,6 +665,11 @@ class MainActivity : AppCompatActivity() {
         grantResults: IntArray
     ) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode == REQ_STORAGE_PERM) {
+            WifiOverlayService.getInstance()?.applyExtraFeatures()
+            refreshExtraStatus()
+            return
+        }
         // Независимо от результата продолжаем цепочку проверок дальше —
         // если отказали, при следующем открытии приложения спросим снова.
         ensurePermissionsThenStartService()
@@ -521,6 +684,9 @@ class MainActivity : AppCompatActivity() {
             WifiOverlayService.getInstance()?.refreshStatus()
             // Пока экран настроек открыт — не даём иконке скрыться по таймеру.
             WifiOverlayService.getInstance()?.setSettingsOpen(true)
+            WifiOverlayService.getInstance()?.applyExtraFeatures()
+            updateFgControls()
+            refreshExtraStatus()
         } catch (e: Exception) {
             e.printStackTrace()
         }
@@ -530,6 +696,7 @@ class MainActivity : AppCompatActivity() {
         super.onPause()
         // Экран настроек больше не на переднем плане — авто-скрытие снова активно.
         WifiOverlayService.getInstance()?.setSettingsOpen(false)
+        try { applyLogPath() } catch (_: Exception) {}
     }
 
     // Специально НЕ останавливаем сервис в onDestroy — оверлей должен жить

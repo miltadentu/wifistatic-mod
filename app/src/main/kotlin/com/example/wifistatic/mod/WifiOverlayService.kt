@@ -50,6 +50,8 @@ class WifiOverlayService : Service() {
     private var settingsOpen = false
     private var currentStatus = WifiStatus.UNKNOWN
     private var networkCallback: ConnectivityManager.NetworkCallback? = null
+    private var connLogger: ConnLogger? = null
+    private var appWatcher: AppWatcher? = null
     private val mainHandler: Handler by lazy { Handler(Looper.getMainLooper()) }
 
     companion object {
@@ -103,6 +105,7 @@ class WifiOverlayService : Service() {
             startNetworkMonitoring()
             checkCurrentStatus()
             startPeriodicSelfCheck()
+            applyExtraFeatures()
         } catch (t: Throwable) {
             android.util.Log.e("WifiOverlayMod", "Fatal error in onCreate", t)
             stopSelf()
@@ -670,6 +673,27 @@ class WifiOverlayService : Service() {
 
     /** Показать оверлей ровно на N секунд и снова спрятать — независимо от
      *  настройки "авто-скрытие" (это отдельная, явная команда "мигнуть"). */
+    /** Запускает/останавливает журнал и слежение за приложениями по настройкам. */
+    fun applyExtraFeatures() {
+        try {
+            connLogger?.stop(); connLogger = null
+            if (prefs.getBoolean("log_enabled", false)) {
+                val path = prefs.getString("log_path", "/sdcard/wifi_status.log") ?: "/sdcard/wifi_status.log"
+                connLogger = ConnLogger(this, path).also { it.start() }
+            }
+            appWatcher?.stop(); appWatcher = null
+            val apps = prefs.getStringSet("fg_apps", emptySet()) ?: emptySet()
+            if (prefs.getBoolean("fg_enabled", false) && apps.isNotEmpty() && AppWatcher.hasUsageAccess(this)) {
+                appWatcher = AppWatcher(this, apps.toSet()) {
+                    // В режиме «всегда виден» показывать нечего.
+                    if (isAutoHideEnabled) showTemporarily(prefs.getInt("fg_show_sec", 5))
+                }.also { it.start() }
+            }
+        } catch (t: Throwable) {
+            android.util.Log.e("WifiOverlayMod", "applyExtraFeatures", t)
+        }
+    }
+
     private fun showTemporarily(seconds: Int) {
         if (!overlayAdded) return
         manuallyHidden = false
@@ -735,6 +759,7 @@ class WifiOverlayService : Service() {
         } catch (e: Exception) {
             e.printStackTrace()
         }
+        try { connLogger?.stop(); appWatcher?.stop() } catch (_: Exception) {}
         instance = null
     }
 
